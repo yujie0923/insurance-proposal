@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全方位保險規劃 - 趙于翔</title>
+    <!-- 使用 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 與 Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 Lucide 圖示庫 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // 圖示元件封裝，因為 HTML 環境與模組化環境不同
+        const Icon = ({ name, className }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        // --- 輔助元件: 便利貼 ---
+        const StickyNote = ({ title, code, minUnit, recommend, color = "bg-yellow-200", rotation = "-rotate-1", discontinued = false, interestSensitive = false, ageLimit, children }) => (
+            <div className={`${color} p-4 rounded-md shadow-md transform ${rotation} hover:scale-105 transition-transform duration-200 border border-black/5 flex flex-col relative overflow-hidden group`}>
+                {discontinued && (
+                    <div className="absolute top-3 -right-6 bg-gray-500/80 text-white text-[10px] font-bold px-6 py-1 rotate-45 shadow-sm tracking-widest z-10 pointer-events-none">
+                        已停售
+                    </div>
+                )}
+                <div className="flex justify-between items-start border-b border-black/10 pb-2 mb-2">
+                    <div className="pr-4 flex-grow">
+                        <div className="flex items-center gap-2">
+                            <h4 className={`font-extrabold text-lg leading-none ${discontinued ? 'text-gray-500 line-through decoration-gray-400 decoration-2' : 'text-gray-800'}`}>
+                                {code}
+                            </h4>
+                            {interestSensitive && (
+                                <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 text-[10px] font-bold rounded border border-blue-300 shadow-sm shrink-0">
+                                    利變型
+                                </span>
+                            )}
+                        </div>
+                        <span className={`text-xs font-semibold mt-1 inline-block ${discontinued ? 'text-gray-500' : 'text-gray-600'}`}>
+                            {title}
+                        </span>
+                    </div>
+                    {minUnit && (
+                        <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded border shadow-sm shrink-0 z-10 mt-1 ${discontinued ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-white/90 text-[#c2410c] border-[#fdba74]'}`}>
+                            最低{minUnit}
+                        </span>
+                    )}
+                </div>
+                <div className={`text-sm space-y-1.5 leading-relaxed font-medium flex-grow ${discontinued ? 'text-gray-500' : 'text-gray-800'}`}>
+                    {children}
+                </div>
+                <div className={`mt-3 pt-2 border-t ${discontinued ? 'border-gray-300' : 'border-black/10'} flex flex-col gap-1`}>
+                    {recommend && (
+                        <div className={`text-[12px] font-bold ${discontinued ? 'text-gray-400' : 'text-red-600'}`}>
+                            建議規劃: {recommend}
+                        </div>
+                    )}
+                    {ageLimit && (
+                        <div className={`text-[10px] font-bold text-right ${discontinued ? 'text-gray-400' : 'text-[#6b5f54]'} tracking-wide`}>
+                            {ageLimit}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+
+        const SectionTitle = ({ title }) => (
+            <h3 className="text-xl font-bold text-[#4a4036] border-b-2 border-[#8c7a6b] pb-2 mb-4 mt-8 first:mt-0 col-span-full flex items-center gap-2">
+                <Icon name="shield-alert" className="w-5 h-5" /> {title}
+            </h3>
+        );
+
+        const SlideCover = () => (
+            <div className="flex flex-col items-center justify-center h-full text-center px-6 bg-[#fdfbf7] relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-4 bg-[#8c7a6b]"></div>
+                <div className="w-24 h-24 bg-[#8c7a6b] rounded-full flex items-center justify-center mb-8 shadow-lg text-white">
+                    <Icon name="file-heart" className="w-12 h-12" />
+                </div>
+                <h1 className="text-4xl md:text-5xl font-bold text-[#4a4036] mb-4 tracking-wider">全方位保險規劃</h1>
+                <h2 className="text-2xl md:text-3xl text-[#8c7a6b] mb-16 tracking-widest font-light">預見風險，穩健築夢</h2>
+                <div className="mt-auto border-t border-[#d4cfc9] pt-8 w-full max-w-md">
+                    <p className="text-lg text-[#8c7a6b]">專屬保險規劃顧問</p>
+                    <p className="text-3xl font-semibold text-[#4a4036] mt-2">趙于翔</p>
+                </div>
+            </div>
+        );
+
+        const SlideConcept = () => (
+            <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] overflow-y-auto">
+                <h2 className="text-3xl font-bold text-[#4a4036] mb-2 border-l-4 border-[#8c7a6b] pl-4">三階段與保險規劃</h2>
+                <p className="text-lg text-[#8c7a6b] mb-6 pl-5">用 10% 風險預算，守護 90% 的資產</p>
+                <div className="flex-grow flex flex-col md:flex-row gap-8">
+                    <div className="w-full md:w-1/2 bg-white p-6 rounded-xl shadow-sm border border-[#e6e2dd] relative flex flex-col justify-center">
+                        <h3 className="text-center font-bold text-gray-700 mb-4 text-sm">人生收支與風險缺口</h3>
+                        <svg viewBox="0 0 400 220" className="w-full h-auto">
+                            <line x1="20" y1="180" x2="380" y2="180" stroke="#a8a29e" strokeWidth="2" />
+                            <text x="60" y="200" fontSize="12" fill="#78716c">撫養期</text>
+                            <text x="180" y="200" fontSize="12" fill="#78716c">奮鬥期</text>
+                            <text x="320" y="200" fontSize="12" fill="#78716c">養老期</text>
+                            <path d="M 20 180 Q 200 60 380 180" fill="none" stroke="#57534e" strokeWidth="2" strokeDasharray="4,4" />
+                            <path d="M 90 180 C 130 40, 180 30, 210 30 C 240 30, 260 100, 280 180" fill="none" stroke="#3b82f6" strokeWidth="3" />
+                            <text x="110" y="70" fontSize="12" fill="#3b82f6" fontWeight="bold">工作收入線</text>
+                            <line x1="210" y1="30" x2="210" y2="180" stroke="#3b82f6" strokeWidth="2" strokeDasharray="4,4" />
+                            <circle cx="210" cy="30" r="4" fill="#3b82f6" />
+                            <text x="210" y="20" fontSize="12" fill="#1d4ed8" fontWeight="bold" textAnchor="middle">收入中斷</text>
+                            <circle cx="170" cy="110" r="3" fill="#57534e" />
+                            <text x="175" y="114" fontSize="11" fill="#57534e" fontWeight="bold">失能/長病</text>
+                            <path d="M 140 180 L 360 50" fill="none" stroke="#ef4444" strokeWidth="2" />
+                            <text x="310" y="40" fontSize="12" fill="#ef4444" fontWeight="bold">理財收入線</text>
+                        </svg>
+                        <div className="mt-6 text-sm text-gray-600 space-y-1">
+                            <p>• 活太短: 家庭責任、債務留存 (壽險)</p>
+                            <p>• 活太長: 退休金耗盡、通膨 (資產準備)</p>
+                            <p className="text-red-600 font-semibold">• 走不了 (失能/長病): 高昂醫療、長照費</p>
+                            <p className="text-blue-700 font-semibold">• 收入中斷: 日常開銷、儲蓄消耗、債務風險</p>
+                        </div>
+                    </div>
+                    <div className="w-full md:w-1/2 flex flex-col gap-4">
+                        <div className="bg-white p-3 rounded-xl shadow-sm border border-[#e6e2dd] flex items-center justify-center">
+                            <div className="text-center w-full max-w-[220px]">
+                                <h3 className="font-bold text-gray-700 mb-2 text-sm">保險金字塔</h3>
+                                <svg viewBox="0 0 200 150" className="w-full h-auto drop-shadow-md">
+                                    <path d="M 0 150 L 200 150 L 166.6 100 L 33.3 100 Z" fill="#d4cfc9" stroke="#fff" strokeWidth="2" />
+                                    <text x="100" y="132" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">生命保障(基礎)</text>
+                                    <path d="M 33.3 100 L 166.6 100 L 133.3 50 L 66.6 50 Z" fill="#e8e4db" stroke="#fff" strokeWidth="2" />
+                                    <text x="100" y="82" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">財務規劃</text>
+                                    <path d="M 66.6 50 L 133.3 50 L 100 0 Z" fill="#f5f1ea" stroke="#fff" strokeWidth="2" />
+                                    <text x="100" y="38" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">資產傳承</text>
+                                </svg>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-[#e6e2dd] flex-grow flex flex-col items-center justify-center">
+                            <h3 className="font-bold text-gray-700 mb-3 text-sm tracking-widest">收支配置矩陣</h3>
+                            <div className="relative w-full max-w-[280px] aspect-square border-2 border-gray-400 grid grid-cols-2 grid-rows-2 text-center bg-white shadow-sm">
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white border-2 border-gray-400 rounded-full flex items-center justify-center font-bold text-gray-800 shadow-sm z-10 text-sm">收入</div>
+                                <div className="border-r-2 border-b-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
+                                    <h4 className="font-bold text-[#57534e] text-sm mb-1">固定支出 40%</h4>
+                                    <p className="text-[11px] text-gray-500 leading-tight">房租/交通/教育</p>
+                                </div>
+                                <div className="border-b-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
+                                    <h4 className="font-bold text-[#57534e] text-sm mb-1">資產配置 25%</h4>
+                                    <p className="text-[11px] text-gray-500 leading-tight">基金/股票/儲蓄</p>
+                                </div>
+                                <div className="border-r-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-orange-50 relative border-l-4 border-l-orange-500">
+                                    <h4 className="font-bold text-orange-700 text-sm mb-1 z-10">風險 10%</h4>
+                                    <p className="text-[11px] text-orange-900 font-semibold leading-tight z-10">壽險/住院/癌症/重病</p>
+                                </div>
+                                <div className="p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
+                                    <h4 className="font-bold text-[#57534e] text-sm mb-1">負債 25%</h4>
+                                    <p className="text-[11px] text-gray-500 leading-tight">車貸/房貸/孝親</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideCheckup = () => {
+            const checkupRows = [
+                { id: 'life', icon: 'shield', label: "壽險 (家庭責任/債務留存)", color: "text-blue-600", hasDailyRate: false },
+                { id: 'accident', icon: 'activity', label: "意外險 (身故/失能/醫療)", color: "text-amber-500", hasDailyRate: true },
+                { id: 'medical', icon: 'stethoscope', label: "醫療險 (病房/手術/雜費)", color: "text-sky-500", hasDailyRate: true },
+                { id: 'cancer', icon: 'heart-pulse', label: "癌症與重疾 (標靶/一次金)", color: "text-rose-500", hasDailyRate: false },
+                { id: 'ltc', icon: 'user-round', label: "長照與失能 (看護/中斷)", color: "text-green-600", hasDailyRate: false },
+            ];
+            return (
+                <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] overflow-y-auto">
+                    <h2 className="text-3xl font-bold text-[#4a4036] mb-2 border-l-4 border-[#8c7a6b] pl-4 flex items-center gap-3">
+                        保單健診與缺口分析 <Icon name="edit-3" className="w-6 h-6 text-[#8c7a6b]"/>
+                    </h2>
+                    <div className="bg-white rounded-xl shadow-md border border-[#e6e2dd] p-4 flex-grow overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                            <thead>
+                                <tr className="bg-[#8c7a6b] text-white">
+                                    <th className="py-3 px-4 font-bold rounded-tl-lg">保障項目</th>
+                                    <th className="py-3 px-4 font-bold">原有額度</th>
+                                    <th className="py-3 px-4 font-bold rounded-tr-lg">建議規劃</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {checkupRows.map((row, idx) => (
+                                    <tr key={idx} className="border-b border-gray-100">
+                                        <td className="py-4 px-4 font-bold text-gray-700">
+                                            <div className="flex items-center gap-2">
+                                                <Icon name={row.icon} className={`w-5 h-5 ${row.color}`} />
+                                                {row.label}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4"><input type="text" className="w-full border-b border-dashed border-gray-300 outline-none p-1 focus:border-blue-400" placeholder="點擊輸入..." /></td>
+                                        <td className="py-4 px-4"><textarea className="w-full border-b border-dashed border-gray-300 outline-none p-1 focus:border-red-400 resize-none h-10" placeholder="缺口分析..."></textarea></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        const SlideProducts = () => {
+            const [activeTab, setActiveTab] = useState('life');
+            const tabs = [
+                { id: 'life', label: '壽險', icon: 'shield' },
+                { id: 'accident', label: '意外險', icon: 'activity' },
+                { id: 'medical', label: '醫療/手術', icon: 'stethoscope' },
+                { id: 'cancer', label: '防癌/尖端', icon: 'heart-pulse' },
+                { id: 'critical', label: '重疾/傷病', icon: 'shield-alert' },
+                { id: 'ltc', label: '長照/失能', icon: 'user-round' },
+            ];
+
+            return (
+                <div className="flex flex-col h-full bg-[#e8e4db] relative">
+                    <div className="bg-[#4a4036] text-white px-2 pt-2 flex gap-1 overflow-x-auto no-scrollbar">
+                        {tabs.map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-bold transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-[#e8e4db] text-[#4a4036]' : 'bg-white/10'}`}>
+                                <Icon name={tab.icon} className="w-4 h-4" /> {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex-grow p-4 md:p-6 overflow-y-auto">
+                        {activeTab === 'life' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <SectionTitle title="壽險系列" />
+                                <StickyNote code="20NNPL" title="新康順終身保險" minUnit="10萬" recommend="30萬" color="bg-indigo-100" ageLimit="0-70歲 | 終身保障">
+                                    <p>• 終身壽險底層</p>
+                                    <p>• 身故與完全失能保障</p>
+                                </StickyNote>
+                                <StickyNote code="AYWTPL" title="佳倍享福利變型" minUnit="10萬" recommend="100萬起" color="bg-violet-100" interestSensitive={true} ageLimit="0-74歲 | 宣告利率">
+                                    <p>• 抗通膨資產傳承</p>
+                                    <p>• 具增額回饋金機制</p>
+                                </StickyNote>
+                            </div>
+                        )}
+                        {activeTab === 'accident' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <SectionTitle title="意外保障" />
+                                <StickyNote code="PAMR" title="意外實支實付" minUnit="3萬" recommend="3-5萬" color="bg-yellow-100" ageLimit="0-65歲 | 保證續保">
+                                    <p>• 補貼門診與住院收據</p>
+                                    <p>• 健保外自費項目關鍵防護</p>
+                                </StickyNote>
+                            </div>
+                        )}
+                        {/* 其他分頁以此類推... */}
+                        <div className="mt-8 text-center text-gray-500 italic">更多商品細節請參考完整建議書</div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SlideContact = () => (
+            <div className="flex flex-col items-center justify-center h-full text-center px-6 bg-[#4a4036] text-[#e8e4db] relative overflow-hidden">
+                <div className="w-full max-w-md bg-white/5 p-8 rounded-xl border border-white/10 shadow-2xl">
+                    <h1 className="text-2xl font-bold tracking-widest mb-8 text-white border-b border-white/20 pb-4">聯絡資訊</h1>
+                    <div className="flex flex-col items-center mb-8">
+                        <div className="w-20 h-20 bg-[#a39171] rounded-full flex items-center justify-center mb-4 border-4 border-white/10">
+                            <Icon name="user" className="w-10 h-10 text-white" />
+                        </div>
+                        <h2 className="text-4xl font-bold text-white tracking-widest">趙于翔</h2>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-center gap-4 bg-white/10 py-3 rounded-lg"><Icon name="phone" className="w-6 h-6 text-[#a39171]" /> <span className="font-semibold">0968-771572</span></div>
+                        <div className="flex items-center justify-center gap-4 bg-white/10 py-3 rounded-lg"><Icon name="message-circle" className="w-6 h-6 text-[#a39171]" /> <span className="font-semibold">Line ID: 520b0130</span></div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const slides = [SlideCover, SlideConcept, SlideCoreDiagram, SlideCheckup, SlideProducts, SlideContact];
+            const CurrentSlide = slides[currentSlide];
+
+            return (
+                <div className="flex flex-col h-screen w-full font-sans bg-gray-100 overflow-hidden text-gray-800">
+                    <div className="flex-grow relative overflow-hidden">
+                        <CurrentSlide />
+                    </div>
+                    <div className="bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between shrink-0 shadow-lg z-50">
+                        <button onClick={() => setCurrentSlide(p => Math.max(0, p-1))} disabled={currentSlide === 0} className={`flex items-center gap-2 px-4 py-2 font-bold ${currentSlide === 0 ? 'text-gray-300' : 'text-[#4a4036]'}`}><Icon name="chevron-left" className="w-5 h-5" /> 上一頁</button>
+                        <div className="flex gap-2">
+                            {slides.map((_, i) => <div key={i} onClick={() => setCurrentSlide(i)} className={`h-2 rounded-full cursor-pointer transition-all ${currentSlide === i ? 'w-8 bg-[#8c7a6b]' : 'w-2 bg-gray-300'}`} />)}
+                        </div>
+                        <button onClick={() => setCurrentSlide(p => Math.min(slides.length-1, p+1))} disabled={currentSlide === slides.length-1} className={`flex items-center gap-2 px-4 py-2 font-bold ${currentSlide === slides.length-1 ? 'text-gray-300' : 'text-[#4a4036]'}`}>下一頁 <Icon name="chevron-right" className="w-5 h-5" /></button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

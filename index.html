@@ -1,547 +1,288 @@
-import React, { useState, useEffect } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  FileHeart,
-  Activity,
-  BriefcaseMedical,
-  HeartPulse,
-  UserRound,
-  AlertCircle,
-  Phone,
-  MessageCircle,
-  Stethoscope,
-  ShieldAlert,
-  Info,
-  CheckCircle,
-  User,
-  Shield,
-  Edit3
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全方位保險規劃 - 趙于翔</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8f6f3; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .active-nav { background-color: #8c7a6b; color: white; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-// --- 輔助元件: 便利貼 ---
-const StickyNote = ({ title, code, minUnit, recommend, color = "bg-yellow-200", rotation = "-rotate-1", discontinued = false, interestSensitive = false, ageLimit, children }) => (
-  <div className={`${color} p-4 rounded-md shadow-md transform ${rotation} hover:scale-105 transition-transform duration-200 border border-black/5 flex flex-col relative overflow-hidden group`}>
-    {discontinued && (
-      <div className="absolute top-3 -right-6 bg-gray-500/80 text-white text-[10px] font-bold px-6 py-1 rotate-45 shadow-sm tracking-widest z-10 pointer-events-none">
-        已停售
-      </div>
-    )}
-    <div className="flex justify-between items-start border-b border-black/10 pb-2 mb-2">
-      <div className="pr-4 flex-grow">
-        <div className="flex items-center gap-2">
-          <h4 className={`font-extrabold text-lg leading-none ${discontinued ? 'text-gray-500 line-through decoration-gray-400 decoration-2' : 'text-gray-800'}`}>
-            {code}
-          </h4>
-          {interestSensitive && (
-            <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 text-[10px] font-bold rounded border border-blue-300 shadow-sm shrink-0">
-              利變型
-            </span>
-          )}
-        </div>
-        <span className={`text-xs font-semibold mt-1 inline-block ${discontinued ? 'text-gray-500' : 'text-gray-600'}`}>
-          {title}
-        </span>
-      </div>
-      {minUnit && (
-        <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded border shadow-sm shrink-0 z-10 mt-1 ${discontinued ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-white/90 text-[#c2410c] border-[#fdba74]'}`}>
-          最低{minUnit}
-        </span>
-      )}
-    </div>
-    <div className={`text-sm space-y-1.5 leading-relaxed font-medium flex-grow ${discontinued ? 'text-gray-500' : 'text-gray-800'}`}>
-      {children}
-    </div>
-    <div className={`mt-3 pt-2 border-t ${discontinued ? 'border-gray-300' : 'border-black/10'} flex flex-col gap-1`}>
-      {recommend && (
-        <div className={`text-[12px] font-bold ${discontinued ? 'text-gray-400' : 'text-red-600'}`}>
-          建議規劃: {recommend}
-        </div>
-      )}
-      {ageLimit && (
-        <div className={`text-[10px] font-bold text-right ${discontinued ? 'text-gray-400' : 'text-[#6b5f54]'} tracking-wide`}>
-          {ageLimit}
-        </div>
-      )}
-    </div>
-  </div>
-);
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-// --- 輔助元件: 主/附約標題區塊 ---
-const SectionTitle = ({ title }) => (
-  <h3 className="text-xl font-bold text-[#4a4036] border-b-2 border-[#8c7a6b] pb-2 mb-4 mt-8 first:mt-0 col-span-full flex items-center gap-2">
-    <ShieldAlert className="w-5 h-5" /> {title}
-  </h3>
-);
+        // 圖示元件
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            useEffect(() => { lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
 
-// === 第1頁: 封面 ===
-const SlideCover = () => (
-  <div className="flex flex-col items-center justify-center h-full text-center px-6 bg-[#fdfbf7] relative overflow-hidden">
-    <div className="absolute top-0 left-0 w-full h-4 bg-[#8c7a6b]"></div>
-    <div className="w-24 h-24 bg-[#8c7a6b] rounded-full flex items-center justify-center mb-8 shadow-lg text-white">
-      <FileHeart className="w-12 h-12" />
-    </div>
-    <h1 className="text-4xl md:text-5xl font-bold text-[#4a4036] mb-4 tracking-wider">
-      全方位保險規劃
-    </h1>
-    <h2 className="text-2xl md:text-3xl text-[#8c7a6b] mb-16 tracking-widest font-light">
-      預見風險，穩健築夢
-    </h2>
-    <div className="mt-auto border-t border-[#d4cfc9] pt-8 w-full max-w-md">
-      <p className="text-lg text-[#8c7a6b]">專屬保險規劃顧問</p>
-      <p className="text-3xl font-semibold text-[#4a4036] mt-2">趙于翔</p>
-    </div>
-  </div>
-);
-
-// === 第2頁: 核心觀念 ===
-const SlideConcept = () => (
-  <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] overflow-y-auto">
-    <h2 className="text-3xl font-bold text-[#4a4036] mb-2 border-l-4 border-[#8c7a6b] pl-4 shrink-0">三階段與保險規劃</h2>
-    <p className="text-lg text-[#8c7a6b] mb-6 pl-5 shrink-0">用 10% 風險預算，守護 90% 的資產</p>
-    <div className="flex-grow flex flex-col md:flex-row gap-8">
-      <div className="w-full md:w-1/2 bg-white p-6 rounded-xl shadow-sm border border-[#e6e2dd] relative flex flex-col justify-center">
-        <h3 className="text-center font-bold text-gray-700 mb-4">人生收支與風險缺口</h3>
-        <svg viewBox="0 0 400 220" className="w-full h-auto">
-          <line x1="20" y1="180" x2="380" y2="180" stroke="#a8a29e" strokeWidth="2" />
-          <text x="60" y="200" fontSize="12" fill="#78716c">撫養期</text>
-          <text x="180" y="200" fontSize="12" fill="#78716c">奮鬥期</text>
-          <text x="320" y="200" fontSize="12" fill="#78716c">養老期</text>
-          <path d="M 20 180 Q 200 60 380 180" fill="none" stroke="#57534e" strokeWidth="2" strokeDasharray="4,4" />
-          <path d="M 90 180 C 130 40, 180 30, 210 30 C 240 30, 260 100, 280 180" fill="none" stroke="#3b82f6" strokeWidth="3" />
-          <text x="110" y="70" fontSize="12" fill="#3b82f6" fontWeight="bold">工作收入線</text>
-          <line x1="210" y1="30" x2="210" y2="180" stroke="#3b82f6" strokeWidth="2" strokeDasharray="4,4" />
-          <circle cx="210" cy="30" r="4" fill="#3b82f6" />
-          <text x="210" y="20" fontSize="12" fill="#1d4ed8" fontWeight="bold" textAnchor="middle">收入中斷</text>
-          <circle cx="170" cy="110" r="3" fill="#57534e" />
-          <text x="175" y="114" fontSize="11" fill="#57534e" fontWeight="bold">失能/長病</text>
-          <path d="M 140 180 L 360 50" fill="none" stroke="#ef4444" strokeWidth="2" markerEnd="url(#arrow)" />
-          <text x="310" y="40" fontSize="12" fill="#ef4444" fontWeight="bold">理財收入線</text>
-          <defs>
-            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
-            </marker>
-          </defs>
-        </svg>
-        <div className="mt-6 text-sm text-gray-600 space-y-1">
-          <p>• 活太短: 家庭責任、債務留存 (壽險)</p>
-          <p>• 活太長: 退休金耗盡、通膨 (資產準備)</p>
-          <p className="text-red-600 font-semibold">• 走不了 (失能/長病): 高昂醫療、長照費</p>
-          <p className="text-blue-700 font-semibold">• 收入中斷: 日常開銷、儲蓄消耗、債務風險</p>
-        </div>
-      </div>
-      <div className="w-full md:w-1/2 flex flex-col gap-4">
-        <div className="bg-white p-3 rounded-xl shadow-sm border border-[#e6e2dd] flex items-center justify-center">
-          <div className="text-center w-full max-w-[220px]">
-            <h3 className="font-bold text-gray-700 mb-2 text-sm">保險金字塔</h3>
-            <svg viewBox="0 0 200 150" className="w-full h-auto drop-shadow-md">
-              <path d="M 0 150 L 200 150 L 166.6 100 L 33.3 100 Z" fill="#d4cfc9" stroke="#fff" strokeWidth="2" />
-              <text x="100" y="132" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">生命保障(基礎)</text>
-              <path d="M 33.3 100 L 166.6 100 L 133.3 50 L 66.6 50 Z" fill="#e8e4db" stroke="#fff" strokeWidth="2" />
-              <text x="100" y="82" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">財務規劃</text>
-              <path d="M 66.6 50 L 133.3 50 L 100 0 Z" fill="#f5f1ea" stroke="#fff" strokeWidth="2" />
-              <text x="100" y="38" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">資產傳承</text>
-            </svg>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-[#e6e2dd] flex-grow flex flex-col items-center justify-center">
-          <h3 className="font-bold text-gray-700 mb-3 text-sm tracking-widest">收支配置矩陣</h3>
-          <div className="relative w-full max-w-[280px] aspect-square border-2 border-gray-400 grid grid-cols-2 grid-rows-2 text-center bg-white shadow-sm">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white border-2 border-gray-400 rounded-full flex items-center justify-center font-bold text-gray-800 shadow-sm z-10 text-sm">收入</div>
-            <div className="border-r-2 border-b-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
-              <h4 className="font-bold text-[#57534e] text-sm mb-1">固定支出 40%</h4>
-              <p className="text-[11px] text-gray-500 leading-tight">房租/水電/電話<br/>三餐/交通/教育</p>
-            </div>
-            <div className="border-b-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
-              <h4 className="font-bold text-[#57534e] text-sm mb-1">資產配置 25%</h4>
-              <p className="text-[11px] text-gray-500 leading-tight">基金/股票<br/>債券/黃金</p>
-            </div>
-            <div className="border-r-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-orange-50 relative border-l-4 border-l-orange-500">
-              <h4 className="font-bold text-orange-700 text-sm mb-1 z-10">風險 10%</h4>
-              <p className="text-[11px] text-orange-900 font-semibold leading-tight z-10">傷害/壽險/住院<br/>實支實付/癌症/手術<br/>長照/重大疾病/傷病</p>
-            </div>
-            <div className="p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
-              <h4 className="font-bold text-[#57534e] text-sm mb-1">負債 25%</h4>
-              <p className="text-[11px] text-gray-500 leading-tight">車貸/房貸/孝親</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// === 第3頁: 六大核心 ===
-const SlideCoreDiagram = () => (
-  <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#f5f1ea] overflow-y-auto">
-    <h2 className="text-3xl font-bold text-[#4a4036] mb-8 text-center shrink-0">醫療保障六大核心基礎</h2>
-    <div className="flex-grow flex flex-col lg:flex-row items-center justify-center gap-12 py-4">
-      <div className="relative w-[320px] h-[320px] shrink-0 mx-auto lg:mx-0">
-        <div className="absolute top-[0px] left-[104px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-50">壽險</div>
-        <div className="absolute top-[75px] left-[16px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-40">意外</div>
-        <div className="absolute top-[75px] left-[192px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-40">住院</div>
-        <div className="absolute top-[170px] left-[52px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-30">癌症</div>
-        <div className="absolute top-[170px] left-[156px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-30">手術</div>
-        <div className="absolute top-[240px] left-0 w-full text-center z-50">
-          <span className="text-4xl font-extrabold text-white tracking-widest" style={{textShadow: "2px 2px 4px rgba(0,0,0,0.4), -1px 1px 0 #a39171, 1px -1px 0 #a39171, -1px 1px 0 #a39171, 1px 1px 0 #a39171"}}>長照</span>
-        </div>
-      </div>
-      <div className="w-full lg:w-1/2 max-w-md flex flex-col gap-6">
-        <div className="bg-white p-5 rounded-xl border-2 border-red-200 shadow-sm relative">
-          <div className="absolute -top-3 left-3 bg-red-100 text-red-700 px-3 py-1 font-bold text-sm rounded shadow-sm flex items-center gap-1">
-            <AlertCircle className="w-4 h-4"/> 重點知識
-          </div>
-          <h3 className="text-lg font-bold text-[#4a4036] mb-3 border-b pb-2 mt-2">重大疾病包含哪些? (共7項)</h3>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-gray-700 font-medium text-sm">
-            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-red-500" /> 1. 腦中風後障礙(重度)</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-red-500" /> 2. 急性心肌梗塞(重度)</li>
-            <li className="flex items-center gap-2 sm:col-span-2"><CheckCircle className="w-4 h-4 text-red-500" /> 3. 冠狀動脈路徑型手術</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-red-500" /> 4. 末期腎病變</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-red-500" /> 5. 癌症(重度)</li>
-            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-red-500" /> 6. 癱瘓(重度)</li>
-            <li className="flex items-center gap-2 sm:col-span-2"><CheckCircle className="w-4 h-4 text-red-500" /> 7. 重大器官或造血幹細胞移植</li>
-          </ul>
-        </div>
-        <div className="bg-yellow-200 p-6 rounded-sm shadow-md border border-yellow-300 w-full transform rotate-1 hover:rotate-0 transition-transform duration-300">
-          <p className="font-bold text-xl text-black mb-4">人身保險不外乎:</p>
-          <ol className="list-decimal pl-6 space-y-3 text-gray-900 font-medium text-[17px]">
-            <li>壽險、重大傷病險及重大疾病險</li>
-            <li>意外險及意外實支實付</li>
-            <li>住院日額及住院實支實付</li>
-            <li>手術險 (含手術或處置)</li>
-            <li>防癌險</li>
-            <li>長照險及失能險</li>
-          </ol>
-          <div className="mt-6 pt-4 border-t border-yellow-400 text-gray-900 font-medium text-[17px] space-y-1">
-            <p>1~5 是醫療保障的核心基礎</p>
-            <p>6 是未來趨勢</p>
-            <p className="font-bold mt-2">保障齊了，就要做資產規劃</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// === 第4頁: 保單健診互動表格 ===
-const SlideCheckup = () => {
-  const checkupRows = [
-    { id: 'life', icon: Shield, label: "壽險 (家庭責任/債務留存)", color: "text-blue-600", hasDailyRate: false },
-    { id: 'accident', icon: Activity, label: "意外險 (意外身故/失能/醫療)", color: "text-amber-500", hasDailyRate: true },
-    { id: 'medical', icon: Stethoscope, label: "醫療險 (病房差額/手術/雜費)", color: "text-sky-500", hasDailyRate: true },
-    { id: 'cancer', icon: HeartPulse, label: "癌症與重疾 (標靶/一次金)", color: "text-rose-500", hasDailyRate: false },
-    { id: 'ltc', icon: UserRound, label: "長照與失能 (外籍看護/收入中斷)", color: "text-green-600", hasDailyRate: false },
-  ];
-
-  return (
-    <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] overflow-y-auto">
-      <h2 className="text-3xl font-bold text-[#4a4036] mb-2 border-l-4 border-[#8c7a6b] pl-4 shrink-0 flex items-center gap-3">
-        保單健診與缺口分析 <Edit3 className="w-6 h-6 text-[#8c7a6b]"/>
-      </h2>
-      <p className="text-lg text-[#8c7a6b] mb-6 pl-5 shrink-0">盤點既有資源，讓每一分保費花在刀口上 (可直接點擊虛線欄位輸入)</p>
-      <div className="bg-white rounded-xl shadow-md border border-[#e6e2dd] p-6 flex-grow flex flex-col">
-        <div className="overflow-x-auto w-full flex-grow">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr className="bg-[#8c7a6b] text-white">
-                <th className="py-4 px-6 font-bold text-lg rounded-tl-lg w-[30%]">保障項目 (險種)</th>
-                <th className="py-4 px-6 font-bold text-lg w-[35%]">原有保障額度</th>
-                <th className="py-4 px-6 font-bold text-lg rounded-tr-lg w-[35%]">缺口分析/建議規劃</th>
-              </tr>
-            </thead>
-            <tbody>
-              {checkupRows.map((row, idx) => {
-                const Icon = row.icon;
-                return (
-                  <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50 transition-colors group">
-                    <td className="py-5 px-6 text-gray-800 font-bold text-lg align-top pt-8">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full bg-white shadow-sm border border-gray-100 shrink-0 ${row.color}`}>
-                          <Icon className="w-5 h-5" />
+        // --- 共用組件 ---
+        const StickyNote = ({ title, code, minUnit, recommend, color = "bg-yellow-200", rotation = "-rotate-1", discontinued = false, interestSensitive = false, ageLimit, children }) => (
+            <div className={`${color} p-4 rounded-md shadow-md transform ${rotation} hover:scale-105 transition-all duration-200 border border-black/5 flex flex-col relative overflow-hidden`}>
+                {discontinued && (
+                    <div className="absolute top-3 -right-6 bg-gray-500/80 text-white text-[10px] font-bold px-6 py-1 rotate-45 shadow-sm z-10 pointer-events-none">已停售</div>
+                )}
+                <div className="flex justify-between items-start border-b border-black/10 pb-2 mb-2">
+                    <div className="pr-2 flex-grow">
+                        <div className="flex items-center gap-1">
+                            <h4 className={`font-extrabold text-lg leading-none ${discontinued ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{code}</h4>
+                            {interestSensitive && <span className="bg-blue-100 text-blue-700 px-1 py-0.5 text-[9px] font-bold rounded border border-blue-300">利變</span>}
                         </div>
-                        <span className="leading-snug">{row.label}</span>
-                      </div>
-                    </td>
-                    <td className="py-5 px-6 align-top pt-8">
-                      <input type="text" placeholder="輸入實支實付/一次金等額度..." className="w-full bg-transparent border-b border-gray-300 border-dashed pb-1 outline-none focus:border-blue-500 focus:border-solid text-lg text-gray-700 transition-colors" />
-                      {row.hasDailyRate && (
-                        <div className="mt-4 bg-[#fdfbf7] p-3 rounded-lg border border-[#e6e2dd] shadow-sm">
-                          <div className="text-sm font-bold text-[#8c7a6b] mb-2 border-b pb-1 flex items-center gap-1">
-                            <Stethoscope className="w-4 h-4"/> 日額保障拆解
-                          </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="flex flex-col">
-                              <label className="text-xs text-gray-500 mb-1">終身險日額</label>
-                              <div className="flex items-end gap-1">
-                                <input type="text" className="w-full bg-transparent border-b border-gray-300 border-dashed outline-none text-sm text-center" />
-                                <span className="text-xs text-gray-400">元/天</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-col">
-                              <label className="text-xs text-gray-500 mb-1">定期險日額</label>
-                              <div className="flex items-end gap-1">
-                                <input type="text" className="w-full bg-transparent border-b border-gray-300 border-dashed outline-none text-sm text-center" />
-                                <span className="text-xs text-gray-400">元/天</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-col bg-blue-50/50 p-1 rounded">
-                              <label className="text-xs text-blue-700 font-bold mb-1">總日額</label>
-                              <div className="flex items-end gap-1">
-                                <input type="text" className="w-full bg-transparent border-b border-blue-300 border-dashed outline-none text-base font-bold text-blue-700 text-center" />
-                                <span className="text-xs text-blue-500 font-bold">元</span>
-                              </div>
-                            </div>
-                          </div>
+                        <span className={`text-xs font-semibold mt-1 inline-block ${discontinued ? 'text-gray-500' : 'text-gray-600'}`}>{title}</span>
+                    </div>
+                    {minUnit && <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-white/90 text-[#c2410c] border border-[#fdba74]">最低{minUnit}</span>}
+                </div>
+                <div className={`text-sm space-y-1.5 leading-relaxed font-medium flex-grow ${discontinued ? 'text-gray-500' : 'text-gray-800'}`}>{children}</div>
+                <div className="mt-3 pt-2 border-t border-black/10">
+                    {recommend && <div className="text-[12px] font-bold text-red-600">建議規劃: {recommend}</div>}
+                    {ageLimit && <div className="text-[10px] font-bold text-right text-[#6b5f54]">{ageLimit}</div>}
+                </div>
+            </div>
+        );
+
+        const SectionTitle = ({ title }) => (
+            <h3 className="text-xl font-bold text-[#4a4036] border-b-2 border-[#8c7a6b] pb-2 mb-4 mt-8 first:mt-0 col-span-full flex items-center gap-2">
+                <Icon name="shield-check" /> {title}
+            </h3>
+        );
+
+        // --- 頁面內容 ---
+        const PageHome = () => (
+            <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6">
+                <div className="w-24 h-24 bg-[#8c7a6b] rounded-full flex items-center justify-center mb-8 shadow-xl text-white">
+                    <Icon name="file-heart" className="w-12 h-12" />
+                </div>
+                <h1 className="text-4xl md:text-5xl font-black text-[#4a4036] mb-4 tracking-tighter">全方位保險規劃</h1>
+                <h2 className="text-xl md:text-2xl text-[#8c7a6b] mb-12 tracking-widest font-light uppercase">Risk Planning Proposal</h2>
+                <div className="w-full max-w-sm border-t border-[#d4cfc9] pt-8">
+                    <p className="text-[#8c7a6b] font-medium">專屬保險規劃顧問</p>
+                    <p className="text-4xl font-black text-[#4a4036] mt-2">趙于翔</p>
+                    <div className="flex justify-center gap-4 mt-6">
+                        <span className="flex items-center gap-1 text-sm bg-white px-3 py-1 rounded-full shadow-sm text-[#8c7a6b] border border-[#e6e2dd]"><Icon name="check-circle" className="w-3 h-3"/> 專業分析</span>
+                        <span className="flex items-center gap-1 text-sm bg-white px-3 py-1 rounded-full shadow-sm text-[#8c7a6b] border border-[#e6e2dd]"><Icon name="check-circle" className="w-3 h-3"/> 量身定做</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const PageConcept = () => (
+            <div className="space-y-8 animate-in fade-in duration-500">
+                <div className="border-l-8 border-[#8c7a6b] pl-6">
+                    <h2 className="text-3xl font-black text-[#4a4036]">核心理財觀念</h2>
+                    <p className="text-lg text-[#8c7a6b]">用 10% 風險預算，守護 90% 的資產</p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#e6e2dd]">
+                        <h3 className="font-bold text-[#4a4036] mb-6 flex items-center gap-2 text-lg"><Icon name="trending-up" /> 人生收支缺口</h3>
+                        <div className="aspect-video bg-[#faf9f7] rounded-xl flex items-center justify-center border border-dashed border-[#d4cfc9]">
+                            {/* 此處可放置 SVG 圖表 */}
+                            <span className="text-gray-400">人生各階段風險分析圖</span>
                         </div>
-                      )}
-                    </td>
-                    <td className="py-5 px-6 align-top pt-8">
-                      <textarea placeholder="輸入缺口分析與您的建議..." className="w-full h-full min-h-[40px] resize-none bg-transparent border-b border-gray-300 border-dashed pb-1 outline-none focus:border-red-500 focus:border-solid text-lg text-red-700 font-medium transition-colors" style={{ height: row.hasDailyRate ? '100px' : '40px' }} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-4 text-sm text-gray-500 flex items-center gap-2">
-          <Info className="w-4 h-4 shrink-0" /> 提示: 在向客戶解說時，您可以直接在此頁面的虛線處輸入現有額度與專業建議。
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// === 第5頁: 互動式商品白板 ===
-const SlideProducts = () => {
-  const [activeTab, setActiveTab] = useState('life');
-
-  const tabs = [
-    { id: 'life', label: '壽險', icon: Shield },
-    { id: 'accident', label: '意外險', icon: Activity },
-    { id: 'medical', label: '住院/手術', icon: Stethoscope },
-    { id: 'cancer', label: '防癌/尖端', icon: HeartPulse },
-    { id: 'critical', label: '重疾/傷病', icon: ShieldAlert },
-    { id: 'ltc', label: '長照/失能', icon: UserRound },
-  ];
-
-  const tedDiseases = [
-    "腦中風後障礙(重度)","急性心肌梗塞(重度)","冠狀動脈路徑型手術","末期腎病變","癌症(重度)","癱瘓(重度)","重大器官/造血幹細胞移植",
-    "嚴重阿茲海默氏症","嚴重巴金森氏症","嚴重類風濕性關節炎","嚴重全身性紅斑性狼瘡腎病變","嚴重克隆氏症或潰瘍性結腸炎","嚴重再生不良性貧血","多發性硬化症",
-    "嚴重肌肉失養症","嚴重肌萎縮性脊髓側索硬化症","嚴重運動神經元疾病","重度重症肌無力","脊髓灰質炎併發重度神經障礙","嚴重頭部創傷","深度昏迷",
-    "嚴重第三度燒燙傷", "主動脈外科置換手術", "心臟瓣膜開心手術", "慢性肝病合併肝衰竭","急性腦炎併發專屬神經障礙","嚴重細菌性腦膜炎","嚴重原發性肺動脈高血壓",
-    "嚴重慢性阻塞性肺病","嚴重肝硬化症","急性壞死性胰臟炎","克庫雅氏病","伊波拉病毒感染","進行性核上神經失調症","多系統萎縮症",
-    "嚴重氣喘","嚴重慢性縮窄性心包炎","嚴重原發性硬化性膽管炎","嚴重膽道閉鎖","嚴重瀰漫性硬皮病","嚴重特發性肺纖維化"
-  ];
-
-  return (
-    <div className="flex flex-col h-full bg-[#e8e4db] relative">
-      <div className="bg-[#4a4036] text-white px-4 pt-4 flex gap-1 overflow-x-auto shrink-0 shadow-md z-10 no-scrollbar">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-bold transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? 'bg-[#e8e4db] text-[#4a4036] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]' : 'bg-white/10 hover:bg-white/20'
-              }`}
-            >
-              <Icon className="w-4 h-4" /> {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex-grow p-4 md:p-6 overflow-y-auto pb-20">
-        {activeTab === 'life' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            <SectionTitle title="主約 (Main Contract)" />
-            <StickyNote code="20NNPL" title="新康順終身保險" minUnit="10萬" recommend="30萬" color="bg-indigo-100" rotation="-rotate-1" ageLimit="投保: 0-70歲 | 保障終身">
-              <p>• 終身壽險保障: <span className="text-blue-700 font-bold">10萬元</span></p>
-              <p>• 涵蓋身故及完全失能理賠</p>
-              <p className="text-xs mt-1 italic opacity-70">最常見的醫療附約底層主約</p>
-            </StickyNote>
-            <StickyNote code="AYWTPL" title="佳倍享福利變型終身保險" minUnit="10萬" recommend="100萬~500萬" color="bg-violet-100" rotation="rotate-1" interestSensitive={true} ageLimit="投保: 0-74歲 | 保障至110歲">
-              <p>• 終身壽險保障: <span className="text-blue-700 font-bold">10萬元</span></p>
-              <p>• 宣告利率機制: <strong className="text-blue-800">增額回饋分享金</strong></p>
-              <p className="text-xs mt-1 opacity-70">透過宣告利率抵禦通膨，適合資產傳承</p>
-            </StickyNote>
-            <SectionTitle title="附約 (Rider)" />
-            <StickyNote code="NTR2" title="新定期壽險附約" minUnit="50萬" recommend="100萬~300萬" color="bg-indigo-50" rotation="rotate-1" ageLimit="投保: 15-65歲 | 最高續保至75歲">
-              <p>• 階段性身故防護附約</p>
-              <p>• 靈活附加於既有主約，彈性調高保障</p>
-            </StickyNote>
-          </div>
-        )}
-
-        {activeTab === 'accident' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            <SectionTitle title="主約 (Main Contract)" />
-            <StickyNote code="SPA" title="青春動起來保險" minUnit="10萬" recommend="100萬" color="bg-amber-200" rotation="rotate-1" ageLimit="投保: 15-65歲 | 保障至85歲">
-              <p>• 意外身故保險金: <span className="text-blue-700 font-bold">10萬元</span></p>
-              <p>• 1-11級失能: 給付 <span className="text-blue-700 font-bold">5千~10萬</span></p>
-              <p className="text-xs mt-1 italic opacity-70">少數可單獨出單之專屬意外險主約</p>
-            </StickyNote>
-            <SectionTitle title="附約 (Rider)" />
-            <StickyNote code="PAMR" title="意外實支實付附約" minUnit="3萬" recommend="3萬~5萬" color="bg-yellow-100" rotation="-rotate-1" ageLimit="投保: 0-65歲 | 最高續保至75歲">
-              <p>• 意外醫療收據實支: 限額 <span className="text-blue-700 font-bold">3萬元</span></p>
-              <p>• 健保不給付之耗材最佳防線</p>
-            </StickyNote>
-          </div>
-        )}
-
-        {activeTab === 'medical' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            <SectionTitle title="主約 (Main Contract)" />
-            <StickyNote code="HPHI2" title="溢心守護2醫療保險" minUnit="500元" recommend="1000元" color="bg-sky-100" rotation="-rotate-2" ageLimit="投保: 0-65歲 | 保障終身">
-              <p>• 終身手術與創傷縫合保障帳戶</p>
-              <p>• 住院/門診手術依表定倍數理賠</p>
-            </StickyNote>
-            <SectionTitle title="附約 (Rider)" />
-            <StickyNote code="1HS" title="實踐幸福住院醫療附約" minUnit="計畫A" recommend="計畫A或B" color="bg-sky-100" rotation="rotate-1" ageLimit="投保: 0-70歲 | 保證續保至74歲">
-              <p>• 病房費: <span className="text-blue-700 font-bold">3,000元/天</span></p>
-              <p>• 手術與雜費: 限額 <span className="text-red-600 font-bold">20萬元</span></p>
-              <p>• 門診手術限額 <span className="text-blue-700 font-bold">3萬元</span></p>
-            </StickyNote>
-          </div>
-        )}
-
-        {activeTab === 'cancer' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            <SectionTitle title="主約 (Main Contract)" />
-            <StickyNote code="HCAB2" title="滿溢久久2防癌主約" minUnit="1單位" recommend="1~2單位" color="bg-red-100" rotation="-rotate-1" ageLimit="投保: 0-60歲 | 保障終身">
-              <p className="mb-1 text-xs text-gray-700 font-bold">涵蓋定額理賠細項:</p>
-              <div className="grid grid-cols-2 gap-1 text-[11px] font-bold text-gray-600">
-                <span>初次罹癌</span><span>癌症住院</span>
-                <span>癌症手術</span><span>癌症門診</span>
-              </div>
-            </StickyNote>
-            <SectionTitle title="附約 (Rider)" />
-            <StickyNote code="1CGT" title="癌症精準醫療附約" minUnit="1單位" recommend="1單位" color="bg-rose-100" rotation="-rotate-2" ageLimit="投保: 0-70歲 | 保證續保至80歲">
-              <p>• 癌症基因檢測: 最高 <span className="text-blue-700 font-bold">3萬元</span></p>
-              <p>• 標靶藥物治療: <span className="text-red-600 font-bold">10萬元</span></p>
-            </StickyNote>
-          </div>
-        )}
-
-        {activeTab === 'critical' && (
-          <div className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              <SectionTitle title="主約 (Main Contract)" />
-              <StickyNote code="HPDD" title="重傷終身主約 (具保本)" minUnit="10萬" recommend="20萬~100萬" color="bg-orange-100" rotation="rotate-1" ageLimit="投保: 0-65歲 | 保障終身">
-                <p>• 憑「重大傷病卡」理賠 <span className="text-red-600 font-bold">10萬元</span></p>
-                <p>• 具身故退還保費機制，兼顧防護保本</p>
-              </StickyNote>
+                        <ul className="mt-6 space-y-3 text-gray-700">
+                            <li className="flex gap-2"><Icon name="alert-triangle" className="text-orange-500 w-5 h-5" /> <strong>活太短：</strong> 家庭責任與債務留存</li>
+                            <li className="flex gap-2"><Icon name="hourglass" className="text-blue-500 w-5 h-5" /> <strong>活太長：</strong> 退休金與長壽風險</li>
+                            <li className="flex gap-2"><Icon name="activity" className="text-red-500 w-5 h-5" /> <strong>走不了：</strong> 醫療與長期照顧支出</li>
+                        </ul>
+                    </div>
+                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#e6e2dd] flex flex-col justify-center items-center">
+                        <h3 className="font-bold text-[#4a4036] mb-6 text-lg">保險金字塔架構</h3>
+                        <div className="w-full max-w-xs space-y-2">
+                            <div className="bg-[#f5f1ea] p-4 text-center rounded-t-full font-bold border-b border-white">資產傳承</div>
+                            <div className="bg-[#e8e4db] p-6 text-center font-bold border-b border-white">財務規劃 / 儲蓄</div>
+                            <div className="bg-[#d4cfc9] p-8 text-center rounded-b-lg font-bold">醫療保障 (基礎)</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-orange-200 shadow-sm mt-4">
-              <h3 className="text-lg font-bold text-[#4a4036] mb-3 border-b pb-2 flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-orange-500" /> 現行 TED/1TED 特定傷病範圍 (41項)
-              </h3>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 text-sm text-gray-700">
-                {tedDiseases.map((disease, index) => (
-                  <li key={index} className="flex items-start gap-1">
-                    <span className="text-orange-400 mt-0.5">•</span> {index + 1}. {disease}
-                  </li>
-                ))}
-              </ul>
+        );
+
+        const PageCheckup = () => (
+            <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h2 className="text-3xl font-black text-[#4a4036]">保單健診與互動分析</h2>
+                    <div className="text-sm bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                        <Icon name="info" /> 點擊欄位即可直接輸入內容
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-[#e6e2dd]">
+                    <table className="w-full text-left">
+                        <thead className="bg-[#4a4036] text-white">
+                            <tr>
+                                <th className="p-5 font-bold">保障項目</th>
+                                <th className="p-5 font-bold">原有額度</th>
+                                <th className="p-5 font-bold">缺口/建議</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {['壽險保障', '意外傷害', '醫療實支', '癌症/重疾', '長期照顧'].map((item, i) => (
+                                <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                    <td className="p-5 font-bold text-gray-800">{item}</td>
+                                    <td className="p-5"><input type="text" placeholder="輸入額度..." className="w-full bg-transparent border-b border-dashed border-gray-300 focus:border-blue-500 outline-none p-1 text-blue-600 font-medium" /></td>
+                                    <td className="p-5"><textarea placeholder="專業建議..." className="w-full bg-transparent border-b border-dashed border-gray-300 focus:border-red-500 outline-none p-1 text-red-600 text-sm h-10 resize-none" /></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-          </div>
-        )}
+        );
 
-        {activeTab === 'ltc' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-            <SectionTitle title="主約 (Main Contract)" />
-            <StickyNote code="HRLTC2" title="溢路相守2長期照顧" minUnit="1萬" recommend="2萬~3萬" color="bg-green-100" rotation="-rotate-2" ageLimit="投保: 0-65歲 | 保障至99歲">
-              <p>• 長照一次金: <span className="text-red-600 font-bold">6萬元</span></p>
-              <p>• 分期長照金: 每月 <span className="text-blue-700 font-bold">1萬元</span></p>
-            </StickyNote>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+        const PageProducts = () => {
+            const [cat, setCat] = useState('medical');
+            const categories = [
+                { id: 'life', label: '壽險', icon: 'shield' },
+                { id: 'medical', label: '醫療', icon: 'stethoscope' },
+                { id: 'cancer', label: '癌症', icon: 'heart-pulse' },
+                { id: 'ltc', label: '長照', icon: 'user-round' },
+            ];
 
-// --- Slide 6: 聯絡資訊 ---
-const SlideContact = () => (
-  <div className="flex flex-col items-center justify-center h-full text-center px-6 bg-[#4a4036] text-[#e8e4db] relative overflow-hidden">
-    <div className="w-full max-w-md bg-white/5 p-12 rounded-xl border border-white/10 shadow-2xl relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
-      <h1 className="text-3xl font-bold tracking-widest mb-10 text-white border-b border-white/20 pb-4 inline-block">聯絡資訊</h1>
-      <div className="flex flex-col items-center mb-10 relative z-10">
-        <div className="w-24 h-24 bg-[#a39171] rounded-full flex items-center justify-center shadow-lg text-white mb-6 border-4 border-white/10">
-          <User className="w-12 h-12" />
-        </div>
-        <h2 className="text-5xl font-extrabold text-white tracking-widest drop-shadow-md">趙于翔</h2>
-      </div>
-      <div className="space-y-4 text-xl w-full relative z-10">
-        <div className="flex items-center justify-center gap-4 bg-white/10 py-4 rounded-lg hover:bg-white/20 transition-colors cursor-pointer w-full">
-          <Phone className="w-7 h-7 text-[#a39171]" />
-          <span className="tracking-wider font-semibold text-white">0968-771572</span>
-        </div>
-        <div className="flex items-center justify-center gap-4 bg-white/10 py-4 rounded-lg hover:bg-white/20 transition-colors cursor-pointer w-full">
-          <MessageCircle className="w-7 h-7 text-[#a39171]" />
-          <span className="tracking-wider font-semibold text-white">Line ID: 520b0130</span>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+            return (
+                <div className="space-y-6">
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                        {categories.map(c => (
+                            <button key={c.id} onClick={() => setCat(c.id)} className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold whitespace-nowrap transition-all ${cat === c.id ? 'bg-[#8c7a6b] text-white shadow-lg scale-105' : 'bg-white text-gray-500 border border-gray-200'}`}>
+                                <Icon name={c.icon} className="w-4 h-4"/> {c.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in zoom-in duration-300">
+                        {cat === 'medical' && (
+                            <>
+                                <StickyNote code="1HS" title="實踐幸福醫療附約" recommend="計畫B" color="bg-sky-50" ageLimit="0-70歲 | 續保至74歲">
+                                    <p>• 病房費: 3,000元/天</p>
+                                    <p>• 手術雜費: 限額 20 萬元</p>
+                                    <p>• 門診手術亦有保障</p>
+                                </StickyNote>
+                                <StickyNote code="HPHI2" title="溢心守護2終身醫療" recommend="1000元" color="bg-blue-50" ageLimit="0-65歲 | 終身保障">
+                                    <p>• 終身手術帳戶</p>
+                                    <p>• 住院/門診定額理賠</p>
+                                </StickyNote>
+                                <StickyNote code="HS" title="醫療實支(早期)" discontinued={true} color="bg-gray-100">
+                                    <p>早期經典實支實付</p>
+                                    <p>已由 1HS 全面取代</p>
+                                </StickyNote>
+                            </>
+                        )}
+                        {cat === 'life' && (
+                            <StickyNote code="AYWTPL" title="佳倍享利變終身" recommend="100萬起" color="bg-indigo-50" interestSensitive={true} ageLimit="資產傳承首選">
+                                <p>• 宣告利率獲取增額回饋</p>
+                                <p>• 身故保障隨年期增長</p>
+                            </StickyNote>
+                        )}
+                        {/* 其他分類可按此模式擴充 */}
+                    </div>
+                </div>
+            );
+        };
 
-const App = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const slides = [SlideCover, SlideConcept, SlideCoreDiagram, SlideCheckup, SlideProducts, SlideContact];
-  const CurrentSlide = slides[currentSlide];
+        const PageContact = () => (
+            <div className="flex items-center justify-center min-h-[70vh]">
+                <div className="bg-[#4a4036] text-white p-12 rounded-[3rem] shadow-2xl w-full max-w-lg text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                    <h2 className="text-2xl font-bold mb-10 tracking-widest border-b border-white/10 pb-4">聯絡資訊</h2>
+                    <div className="w-24 h-24 bg-[#a39171] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white/20 shadow-inner">
+                        <Icon name="user" className="w-12 h-12" />
+                    </div>
+                    <p className="text-gray-400 text-sm mb-2">您的保險規劃顧問</p>
+                    <h3 className="text-5xl font-black mb-10 tracking-tighter">趙于翔</h3>
+                    <div className="space-y-4">
+                        <a href="tel:0968771572" className="flex items-center justify-center gap-4 bg-white/10 py-4 rounded-2xl hover:bg-white/20 transition-all border border-white/5">
+                            <Icon name="phone" className="text-[#a39171]" /> <span className="text-xl font-bold">0968-771572</span>
+                        </a>
+                        <div className="flex items-center justify-center gap-4 bg-white/10 py-4 rounded-2xl border border-white/5">
+                            <Icon name="message-circle" className="text-[#a39171]" /> <span className="text-xl font-bold">Line: 520b0130</span>
+                        </div>
+                    </div>
+                    <p className="mt-12 text-gray-500 text-xs">© 2026 趙于翔保險規劃顧問 版權所有</p>
+                </div>
+            </div>
+        );
 
-  const nextSlide = () => setCurrentSlide(prev => (prev < slides.length - 1 ? prev + 1 : prev));
-  const prevSlide = () => setCurrentSlide(prev => (prev > 0 ? prev - 1 : prev));
+        // --- 主程式架構 ---
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'ArrowRight') nextSlide();
-      if (e.key === 'ArrowLeft') prevSlide();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentSlide]);
+            const navItems = [
+                { id: 'home', label: '首頁封面', icon: 'home' },
+                { id: 'concept', label: '理財觀念', icon: 'lightbulb' },
+                { id: 'checkup', label: '保單健診', icon: 'clipboard-list' },
+                { id: 'products', label: '商品櫥窗', icon: 'layout-grid' },
+                { id: 'contact', label: '聯絡顧問', icon: 'user' },
+            ];
 
-  return (
-    <div className="flex flex-col h-screen w-full font-sans bg-gray-100 overflow-hidden text-gray-800">
-      <div className="flex-grow relative overflow-hidden">
-        <CurrentSlide />
-      </div>
-      
-      {/* 底部導覽列 */}
-      <div className="bg-white border-t border-gray-300 px-6 py-4 flex items-center justify-between shrink-0 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50">
-        <button
-          onClick={prevSlide}
-          disabled={currentSlide === 0}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors ${currentSlide === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-[#4a4036] hover:bg-gray-100'}`}
-        >
-          <ChevronLeft className="w-5 h-5" /> 上一頁
-        </button>
-        
-        <div className="flex gap-2">
-          {slides.map((_, idx) => (
-            <div
-              key={idx}
-              onClick={() => setCurrentSlide(idx)}
-              className={`h-2 rounded-full cursor-pointer transition-all ${currentSlide === idx ? 'w-8 bg-[#8c7a6b]' : 'w-2 bg-gray-300 hover:bg-gray-400'}`}
-            />
-          ))}
-        </div>
+            const renderPage = () => {
+                switch(currentPage) {
+                    case 'home': return <PageHome />;
+                    case 'concept': return <PageConcept />;
+                    case 'checkup': return <PageCheckup />;
+                    case 'products': return <PageProducts />;
+                    case 'contact': return <PageContact />;
+                    default: return <PageHome />;
+                }
+            };
 
-        <button
-          onClick={nextSlide}
-          disabled={currentSlide === slides.length - 1}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors ${currentSlide === slides.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-[#4a4036] hover:bg-gray-100'}`}
-        >
-          下一頁 <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
-  );
-};
+            return (
+                <div className="flex min-h-screen">
+                    {/* PC 側邊欄 */}
+                    <nav className="hidden lg:flex flex-col w-64 bg-[#4a4036] text-[#d4cfc9] fixed h-full p-6 shadow-2xl z-50">
+                        <div className="mb-10 text-center">
+                            <div className="w-16 h-16 bg-[#8c7a6b] rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3 shadow-lg">
+                                <Icon name="shield" className="w-8 h-8 text-white" />
+                            </div>
+                            <h1 className="text-white font-black text-xl tracking-tighter">專業規劃系統</h1>
+                        </div>
+                        <div className="space-y-2 flex-grow">
+                            {navItems.map(item => (
+                                <button key={item.id} onClick={() => setCurrentPage(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${currentPage === item.id ? 'active-nav shadow-lg' : 'hover:bg-white/5'}`}>
+                                    <Icon name={item.icon} /> {item.label}
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
 
-export default App;
+                    {/* 手機版頂欄 */}
+                    <div className="lg:hidden fixed top-0 w-full bg-[#4a4036] text-white p-4 flex justify-between items-center z-[60] shadow-md">
+                        <span className="font-black tracking-tighter">趙于翔保險規劃</span>
+                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2"><Icon name={isMenuOpen ? "x" : "menu"} /></button>
+                    </div>
+
+                    {/* 手機版選單彈窗 */}
+                    {isMenuOpen && (
+                        <div className="lg:hidden fixed inset-0 bg-[#4a4036] z-[55] pt-20 p-6 flex flex-col gap-4 animate-in slide-in-from-top duration-300">
+                            {navItems.map(item => (
+                                <button key={item.id} onClick={() => { setCurrentPage(item.id); setIsMenuOpen(false); }} className={`w-full flex items-center gap-4 p-5 rounded-2xl font-bold text-xl ${currentPage === item.id ? 'bg-[#8c7a6b]' : 'bg-white/5'}`}>
+                                    <Icon name={item.icon} className="w-6 h-6" /> {item.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* 主內容區 */}
+                    <main className="flex-grow lg:ml-64 p-6 pt-24 lg:pt-12 max-w-7xl mx-auto w-full transition-all duration-500">
+                        {renderPage()}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

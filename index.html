@@ -16,7 +16,12 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8f6f3; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .active-nav { background-color: #8c7a6b; color: white; }
+        
+        /* 動畫效果 */
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -27,185 +32,532 @@
 
         // 圖示元件
         const Icon = ({ name, className = "w-5 h-5" }) => {
-            useEffect(() => { lucide.createIcons(); }, [name]);
+            useEffect(() => { 
+                if (window.lucide) {
+                    window.lucide.createIcons(); 
+                }
+            }, [name]);
             return <i data-lucide={name} className={className}></i>;
         };
 
-        // --- 共用組件 ---
+        // --- 輔助元件: 便利貼 ---
         const StickyNote = ({ title, code, minUnit, recommend, color = "bg-yellow-200", rotation = "-rotate-1", discontinued = false, interestSensitive = false, ageLimit, children }) => (
-            <div className={`${color} p-4 rounded-md shadow-md transform ${rotation} hover:scale-105 transition-all duration-200 border border-black/5 flex flex-col relative overflow-hidden`}>
+            <div className={`${color} p-4 rounded-md shadow-md transform ${rotation} hover:scale-105 transition-all duration-200 border border-black/5 flex flex-col relative overflow-hidden h-full`}>
                 {discontinued && (
-                    <div className="absolute top-3 -right-6 bg-gray-500/80 text-white text-[10px] font-bold px-6 py-1 rotate-45 shadow-sm z-10 pointer-events-none">已停售</div>
+                    <div className="absolute top-3 -right-6 bg-gray-500/80 text-white text-[10px] font-bold px-6 py-1 rotate-45 shadow-sm tracking-widest z-10 pointer-events-none">
+                        已停售
+                    </div>
                 )}
                 <div className="flex justify-between items-start border-b border-black/10 pb-2 mb-2">
                     <div className="pr-2 flex-grow">
                         <div className="flex items-center gap-1">
-                            <h4 className={`font-extrabold text-lg leading-none ${discontinued ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{code}</h4>
-                            {interestSensitive && <span className="bg-blue-100 text-blue-700 px-1 py-0.5 text-[9px] font-bold rounded border border-blue-300">利變</span>}
+                            <h4 className={`font-extrabold text-lg leading-none ${discontinued ? 'text-gray-500 line-through decoration-gray-400 decoration-2' : 'text-gray-800'}`}>
+                                {code}
+                            </h4>
+                            {interestSensitive && (
+                                <span className="bg-blue-100 text-blue-700 px-1 py-0.5 text-[9px] font-bold rounded border border-blue-300 shadow-sm shrink-0">
+                                    利變
+                                </span>
+                            )}
                         </div>
-                        <span className={`text-xs font-semibold mt-1 inline-block ${discontinued ? 'text-gray-500' : 'text-gray-600'}`}>{title}</span>
+                        <span className={`text-xs font-semibold mt-1 inline-block ${discontinued ? 'text-gray-500' : 'text-gray-600'}`}>
+                            {title}
+                        </span>
                     </div>
-                    {minUnit && <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-white/90 text-[#c2410c] border border-[#fdba74]">最低{minUnit}</span>}
+                    {minUnit && (
+                        <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded border shadow-sm shrink-0 z-10 mt-1 ${discontinued ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-white/90 text-[#c2410c] border-[#fdba74]'}`}>
+                            最低{minUnit}
+                        </span>
+                    )}
                 </div>
-                <div className={`text-sm space-y-1.5 leading-relaxed font-medium flex-grow ${discontinued ? 'text-gray-500' : 'text-gray-800'}`}>{children}</div>
-                <div className="mt-3 pt-2 border-t border-black/10">
-                    {recommend && <div className="text-[12px] font-bold text-red-600">建議規劃: {recommend}</div>}
-                    {ageLimit && <div className="text-[10px] font-bold text-right text-[#6b5f54]">{ageLimit}</div>}
+                <div className={`text-sm space-y-1.5 leading-relaxed font-medium flex-grow ${discontinued ? 'text-gray-500' : 'text-gray-800'}`}>
+                    {children}
+                </div>
+                <div className={`mt-3 pt-2 border-t ${discontinued ? 'border-gray-300' : 'border-black/10'} flex flex-col gap-1`}>
+                    {recommend && (
+                        <div className={`text-[12px] font-bold ${discontinued ? 'text-gray-400' : 'text-red-600'}`}>
+                            建議規劃: {recommend}
+                        </div>
+                    )}
+                    {ageLimit && (
+                        <div className={`text-[10px] font-bold text-right ${discontinued ? 'text-gray-400' : 'text-[#6b5f54]'} tracking-wide`}>
+                            {ageLimit}
+                        </div>
+                    )}
                 </div>
             </div>
         );
 
         const SectionTitle = ({ title }) => (
             <h3 className="text-xl font-bold text-[#4a4036] border-b-2 border-[#8c7a6b] pb-2 mb-4 mt-8 first:mt-0 col-span-full flex items-center gap-2">
-                <Icon name="shield-check" /> {title}
+                <Icon name="shield-alert" className="w-5 h-5" /> {title}
             </h3>
         );
 
         // --- 頁面內容 ---
+
+        // 1. 封面
         const PageHome = () => (
-            <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6">
+            <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6 fade-in">
                 <div className="w-24 h-24 bg-[#8c7a6b] rounded-full flex items-center justify-center mb-8 shadow-xl text-white">
                     <Icon name="file-heart" className="w-12 h-12" />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-black text-[#4a4036] mb-4 tracking-tighter">全方位保險規劃</h1>
-                <h2 className="text-xl md:text-2xl text-[#8c7a6b] mb-12 tracking-widest font-light uppercase">Risk Planning Proposal</h2>
+                <h1 className="text-4xl md:text-5xl font-black text-[#4a4036] mb-4 tracking-wider">全方位保險規劃</h1>
+                <h2 className="text-xl md:text-2xl text-[#8c7a6b] mb-16 tracking-widest font-light uppercase">預見風險，穩健築夢</h2>
                 <div className="w-full max-w-sm border-t border-[#d4cfc9] pt-8">
-                    <p className="text-[#8c7a6b] font-medium">專屬保險規劃顧問</p>
-                    <p className="text-4xl font-black text-[#4a4036] mt-2">趙于翔</p>
-                    <div className="flex justify-center gap-4 mt-6">
-                        <span className="flex items-center gap-1 text-sm bg-white px-3 py-1 rounded-full shadow-sm text-[#8c7a6b] border border-[#e6e2dd]"><Icon name="check-circle" className="w-3 h-3"/> 專業分析</span>
-                        <span className="flex items-center gap-1 text-sm bg-white px-3 py-1 rounded-full shadow-sm text-[#8c7a6b] border border-[#e6e2dd]"><Icon name="check-circle" className="w-3 h-3"/> 量身定做</span>
-                    </div>
+                    <p className="text-lg text-[#8c7a6b]">專屬保險規劃顧問</p>
+                    <p className="text-3xl font-semibold text-[#4a4036] mt-2">趙于翔</p>
                 </div>
             </div>
         );
 
+        // 2. 核心觀念
         const PageConcept = () => (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-8 fade-in">
                 <div className="border-l-8 border-[#8c7a6b] pl-6">
-                    <h2 className="text-3xl font-black text-[#4a4036]">核心理財觀念</h2>
-                    <p className="text-lg text-[#8c7a6b]">用 10% 風險預算，守護 90% 的資產</p>
+                    <h2 className="text-3xl font-black text-[#4a4036]">三階段與保險規劃</h2>
+                    <p className="text-lg text-[#8c7a6b]">用 10% 風險預預算，守護 90% 的資產</p>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#e6e2dd]">
-                        <h3 className="font-bold text-[#4a4036] mb-6 flex items-center gap-2 text-lg"><Icon name="trending-up" /> 人生收支缺口</h3>
-                        <div className="aspect-video bg-[#faf9f7] rounded-xl flex items-center justify-center border border-dashed border-[#d4cfc9]">
-                            {/* 此處可放置 SVG 圖表 */}
-                            <span className="text-gray-400">人生各階段風險分析圖</span>
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#e6e2dd] relative flex flex-col justify-center">
+                        <h3 className="text-center font-bold text-gray-700 mb-4">人生收支與風險缺口</h3>
+                        <svg viewBox="0 0 400 220" className="w-full h-auto">
+                            <line x1="20" y1="180" x2="380" y2="180" stroke="#a8a29e" strokeWidth="2" />
+                            <text x="60" y="200" fontSize="12" fill="#78716c">撫養期</text>
+                            <text x="180" y="200" fontSize="12" fill="#78716c">奮鬥期</text>
+                            <text x="320" y="200" fontSize="12" fill="#78716c">養老期</text>
+                            <path d="M 20 180 Q 200 60 380 180" fill="none" stroke="#57534e" strokeWidth="2" strokeDasharray="4,4" />
+                            <path d="M 90 180 C 130 40, 180 30, 210 30 C 240 30, 260 100, 280 180" fill="none" stroke="#3b82f6" strokeWidth="3" />
+                            <text x="110" y="70" fontSize="12" fill="#3b82f6" fontWeight="bold">工作收入線</text>
+                            <line x1="210" y1="30" x2="210" y2="180" stroke="#3b82f6" strokeWidth="2" strokeDasharray="4,4" />
+                            <circle cx="210" cy="30" r="4" fill="#3b82f6" />
+                            <text x="210" y="20" fontSize="12" fill="#1d4ed8" fontWeight="bold" textAnchor="middle">收入中斷</text>
+                            <circle cx="170" cy="110" r="3" fill="#57534e" />
+                            <text x="175" y="114" fontSize="11" fill="#57534e" fontWeight="bold">失能/長病</text>
+                            <path d="M 140 180 L 360 50" fill="none" stroke="#ef4444" strokeWidth="2" />
+                            <text x="310" y="40" fontSize="12" fill="#ef4444" fontWeight="bold">理財收入線</text>
+                        </svg>
+                        <div className="mt-6 text-sm text-gray-600 space-y-1">
+                            <p>• 活太短: 家庭責任、債務留存 (壽險)</p>
+                            <p>• 活太長: 退休金耗盡、通膨 (資產準備)</p>
+                            <p className="text-red-600 font-semibold">• 走不了 (失能/長病): 高昂醫療、長照費</p>
+                            <p className="text-blue-700 font-semibold">• 收入中斷: 日常開銷、儲蓄消耗、債務風險</p>
                         </div>
-                        <ul className="mt-6 space-y-3 text-gray-700">
-                            <li className="flex gap-2"><Icon name="alert-triangle" className="text-orange-500 w-5 h-5" /> <strong>活太短：</strong> 家庭責任與債務留存</li>
-                            <li className="flex gap-2"><Icon name="hourglass" className="text-blue-500 w-5 h-5" /> <strong>活太長：</strong> 退休金與長壽風險</li>
-                            <li className="flex gap-2"><Icon name="activity" className="text-red-500 w-5 h-5" /> <strong>走不了：</strong> 醫療與長期照顧支出</li>
-                        </ul>
                     </div>
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#e6e2dd] flex flex-col justify-center items-center">
-                        <h3 className="font-bold text-[#4a4036] mb-6 text-lg">保險金字塔架構</h3>
-                        <div className="w-full max-w-xs space-y-2">
-                            <div className="bg-[#f5f1ea] p-4 text-center rounded-t-full font-bold border-b border-white">資產傳承</div>
-                            <div className="bg-[#e8e4db] p-6 text-center font-bold border-b border-white">財務規劃 / 儲蓄</div>
-                            <div className="bg-[#d4cfc9] p-8 text-center rounded-b-lg font-bold">醫療保障 (基礎)</div>
+                    <div className="flex flex-col gap-4">
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#e6e2dd] flex flex-col justify-center items-center">
+                            <h3 className="font-bold text-[#4a4036] mb-6 text-lg">保險金字塔架構</h3>
+                            <svg viewBox="0 0 200 150" className="w-full max-w-[240px] h-auto drop-shadow-md">
+                                <path d="M 0 150 L 200 150 L 166.6 100 L 33.3 100 Z" fill="#d4cfc9" stroke="#fff" strokeWidth="2" />
+                                <text x="100" y="132" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">生命保障(基礎)</text>
+                                <path d="M 33.3 100 L 166.6 100 L 133.3 50 L 66.6 50 Z" fill="#e8e4db" stroke="#fff" strokeWidth="2" />
+                                <text x="100" y="82" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">財務規劃</text>
+                                <path d="M 66.6 50 L 133.3 50 L 100 0 Z" fill="#f5f1ea" stroke="#fff" strokeWidth="2" />
+                                <text x="100" y="38" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#4a4036">資產傳承</text>
+                            </svg>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#e6e2dd] flex-grow flex flex-col items-center justify-center">
+                            <h3 className="font-bold text-gray-700 mb-3 text-sm tracking-widest uppercase">收支配置矩陣</h3>
+                            <div className="relative w-full max-w-[280px] aspect-square border-2 border-gray-400 grid grid-cols-2 grid-rows-2 text-center bg-white shadow-sm">
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white border-2 border-gray-400 rounded-full flex items-center justify-center font-bold text-gray-800 shadow-sm z-10 text-sm">收入</div>
+                                <div className="border-r-2 border-b-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
+                                    <h4 className="font-bold text-[#57534e] text-sm mb-1">固定支出 40%</h4>
+                                    <p className="text-[10px] text-gray-500 leading-tight">房租/水電/電話<br/>三餐/交通/教育</p>
+                                </div>
+                                <div className="border-b-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
+                                    <h4 className="font-bold text-[#57534e] text-sm mb-1">資產配置 25%</h4>
+                                    <p className="text-[10px] text-gray-500 leading-tight">基金/股票<br/>債券/黃金</p>
+                                </div>
+                                <div className="border-r-2 border-gray-400 p-2 flex flex-col items-center justify-center bg-orange-50 relative border-l-4 border-l-orange-500">
+                                    <h4 className="font-bold text-orange-700 text-sm mb-1 z-10">風險 10%</h4>
+                                    <p className="text-[10px] text-orange-900 font-semibold leading-tight z-10">傷害/壽險/住院<br/>實支實付/癌症/手術<br/>長照/重大疾病/傷病</p>
+                                </div>
+                                <div className="p-2 flex flex-col items-center justify-center bg-[#faf9f7]">
+                                    <h4 className="font-bold text-[#57534e] text-sm mb-1">負債 25%</h4>
+                                    <p className="text-[10px] text-gray-500 leading-tight">車貸/房貸<br/>孝親</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         );
 
-        const PageCheckup = () => (
-            <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h2 className="text-3xl font-black text-[#4a4036]">保單健診與互動分析</h2>
-                    <div className="text-sm bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
-                        <Icon name="info" /> 點擊欄位即可直接輸入內容
+        // 3. 醫療核心基礎
+        const PageCore = () => (
+            <div className="space-y-8 fade-in">
+                <h2 className="text-3xl font-black text-[#4a4036] text-center mb-8">醫療保障六大核心基礎</h2>
+                <div className="flex flex-col lg:flex-row items-center justify-center gap-12 py-4">
+                    <div className="relative w-[320px] h-[320px] shrink-0">
+                        <div className="absolute top-[0px] left-[104px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-50">壽險</div>
+                        <div className="absolute top-[75px] left-[16px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-40">意外</div>
+                        <div className="absolute top-[75px] left-[192px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-40">住院</div>
+                        <div className="absolute top-[170px] left-[52px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-30">癌症</div>
+                        <div className="absolute top-[170px] left-[156px] w-[112px] h-[112px] bg-[#a39171] rounded-full flex items-center justify-center shadow-md text-white font-bold text-2xl border-4 border-[#f5f1ea] z-30">手術</div>
+                        <div className="absolute top-[260px] left-0 w-full text-center z-50">
+                            <span className="text-4xl font-extrabold text-white tracking-widest" style={{textShadow: "2px 2px 4px rgba(0,0,0,0.4), -1px 1px 0 #a39171, 1px -1px 0 #a39171, -1px 1px 0 #a39171, 1px 1px 0 #a39171"}}>長照</span>
+                        </div>
                     </div>
-                </div>
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-[#e6e2dd]">
-                    <table className="w-full text-left">
-                        <thead className="bg-[#4a4036] text-white">
-                            <tr>
-                                <th className="p-5 font-bold">保障項目</th>
-                                <th className="p-5 font-bold">原有額度</th>
-                                <th className="p-5 font-bold">缺口/建議</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {['壽險保障', '意外傷害', '醫療實支', '癌症/重疾', '長期照顧'].map((item, i) => (
-                                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                    <td className="p-5 font-bold text-gray-800">{item}</td>
-                                    <td className="p-5"><input type="text" placeholder="輸入額度..." className="w-full bg-transparent border-b border-dashed border-gray-300 focus:border-blue-500 outline-none p-1 text-blue-600 font-medium" /></td>
-                                    <td className="p-5"><textarea placeholder="專業建議..." className="w-full bg-transparent border-b border-dashed border-gray-300 focus:border-red-500 outline-none p-1 text-red-600 text-sm h-10 resize-none" /></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <div className="w-full lg:w-1/2 max-w-md flex flex-col gap-6">
+                        <div className="bg-white p-5 rounded-xl border-2 border-red-200 shadow-sm relative">
+                            <div className="absolute -top-3 left-3 bg-red-100 text-red-700 px-3 py-1 font-bold text-xs rounded shadow-sm flex items-center gap-1">
+                                <Icon name="alert-circle" className="w-3 h-3"/> 重點知識
+                            </div>
+                            <h3 className="text-lg font-bold text-[#4a4036] mb-3 border-b pb-2 mt-2">重大疾病包含哪些? (共7項)</h3>
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-gray-700 font-medium text-sm">
+                                <li className="flex items-center gap-2"><Icon name="check-circle" className="w-4 h-4 text-red-500" /> 1. 腦中風後障礙(重度)</li>
+                                <li className="flex items-center gap-2"><Icon name="check-circle" className="w-4 h-4 text-red-500" /> 2. 急性心肌梗塞(重度)</li>
+                                <li className="flex items-center gap-2 sm:col-span-2"><Icon name="check-circle" className="w-4 h-4 text-red-500" /> 3. 冠狀動脈路徑型手術</li>
+                                <li className="flex items-center gap-2"><Icon name="check-circle" className="w-4 h-4 text-red-500" /> 4. 末期腎病變</li>
+                                <li className="flex items-center gap-2"><Icon name="check-circle" className="w-4 h-4 text-red-500" /> 5. 癌症(重度)</li>
+                                <li className="flex items-center gap-2"><Icon name="check-circle" className="w-4 h-4 text-red-500" /> 6. 癱瘓(重度)</li>
+                                <li className="flex items-center gap-2 sm:col-span-2"><Icon name="check-circle" className="w-4 h-4 text-red-500" /> 7. 重大器官或造血幹細胞移植</li>
+                            </ul>
+                        </div>
+                        <div className="bg-yellow-200 p-6 rounded-sm shadow-md border border-yellow-300 transform rotate-1 transition-transform hover:rotate-0">
+                            <p className="font-bold text-lg text-black mb-3">人身保險不外乎:</p>
+                            <ol className="list-decimal pl-6 space-y-1.5 text-gray-900 font-medium text-base">
+                                <li>壽險、重大傷病險及重大疾病險</li>
+                                <li>意外險及意外實支實付</li>
+                                <li>住院日額及住院實支實付</li>
+                                <li>手術險 (含手術或處置)</li>
+                                <li>防癌險</li>
+                                <li>長照險及失能險</li>
+                            </ol>
+                            <div className="mt-4 pt-3 border-t border-yellow-400 text-gray-900 font-medium text-sm">
+                                <p>1~5 是醫療保障的核心基礎</p>
+                                <p>6 是未來趨勢</p>
+                                <p className="font-bold mt-1 text-[#4a4036]">保障齊了，就要做資產規劃</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
 
-        const PageProducts = () => {
-            const [cat, setCat] = useState('medical');
-            const categories = [
-                { id: 'life', label: '壽險', icon: 'shield' },
-                { id: 'medical', label: '醫療', icon: 'stethoscope' },
-                { id: 'cancer', label: '癌症', icon: 'heart-pulse' },
-                { id: 'ltc', label: '長照', icon: 'user-round' },
+        // 4. 保單健診
+        const PageCheckup = () => {
+            const checkupRows = [
+                { id: 'life', icon: 'shield', label: "壽險 (家庭責任/債務留存)", color: "text-blue-600", hasDailyRate: false },
+                { id: 'accident', icon: 'activity', label: "意外險 (意外身故/失能/醫療)", color: "text-amber-500", hasDailyRate: true },
+                { id: 'medical', icon: 'stethoscope', label: "醫療險 (病房差額/手術/雜費)", color: "text-sky-500", hasDailyRate: true },
+                { id: 'cancer', icon: 'heart-pulse', label: "癌症與重疾 (標靶/一次金)", color: "text-rose-500", hasDailyRate: false },
+                { id: 'ltc', icon: 'user-round', label: "長照與失能 (外籍看護/收入中斷)", color: "text-green-600", hasDailyRate: false },
             ];
 
             return (
-                <div className="space-y-6">
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                        {categories.map(c => (
-                            <button key={c.id} onClick={() => setCat(c.id)} className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold whitespace-nowrap transition-all ${cat === c.id ? 'bg-[#8c7a6b] text-white shadow-lg scale-105' : 'bg-white text-gray-500 border border-gray-200'}`}>
-                                <Icon name={c.icon} className="w-4 h-4"/> {c.label}
-                            </button>
-                        ))}
+                <div className="space-y-6 fade-in">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <h2 className="text-3xl font-black text-[#4a4036] flex items-center gap-3">
+                            保單健診與缺口分析 <Icon name="edit-3" className="w-6 h-6 text-[#8c7a6b]"/>
+                        </h2>
+                        <div className="text-sm bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                            <Icon name="info" /> 可點擊虛線欄位輸入客戶資料
+                        </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in zoom-in duration-300">
-                        {cat === 'medical' && (
-                            <>
-                                <StickyNote code="1HS" title="實踐幸福醫療附約" recommend="計畫B" color="bg-sky-50" ageLimit="0-70歲 | 續保至74歲">
-                                    <p>• 病房費: 3,000元/天</p>
-                                    <p>• 手術雜費: 限額 20 萬元</p>
-                                    <p>• 門診手術亦有保障</p>
-                                </StickyNote>
-                                <StickyNote code="HPHI2" title="溢心守護2終身醫療" recommend="1000元" color="bg-blue-50" ageLimit="0-65歲 | 終身保障">
-                                    <p>• 終身手術帳戶</p>
-                                    <p>• 住院/門診定額理賠</p>
-                                </StickyNote>
-                                <StickyNote code="HS" title="醫療實支(早期)" discontinued={true} color="bg-gray-100">
-                                    <p>早期經典實支實付</p>
-                                    <p>已由 1HS 全面取代</p>
-                                </StickyNote>
-                            </>
-                        )}
-                        {cat === 'life' && (
-                            <StickyNote code="AYWTPL" title="佳倍享利變終身" recommend="100萬起" color="bg-indigo-50" interestSensitive={true} ageLimit="資產傳承首選">
-                                <p>• 宣告利率獲取增額回饋</p>
-                                <p>• 身故保障隨年期增長</p>
-                            </StickyNote>
-                        )}
-                        {/* 其他分類可按此模式擴充 */}
+                    <div className="bg-white rounded-2xl shadow-xl overflow-x-auto border border-[#e6e2dd] p-4">
+                        <table className="w-full text-left border-collapse min-w-[750px]">
+                            <thead>
+                                <tr className="bg-[#8c7a6b] text-white">
+                                    <th className="py-4 px-6 font-bold text-lg rounded-tl-lg w-[30%]">保障項目 (險種)</th>
+                                    <th className="py-4 px-6 font-bold text-lg w-[35%]">原有保障額度</th>
+                                    <th className="py-4 px-6 font-bold text-lg rounded-tr-lg w-[35%]">缺口分析 / 建議規劃</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {checkupRows.map((row, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                        <td className="py-6 px-6 align-top">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2 rounded-full bg-white shadow-sm border border-gray-100 ${row.color}`}>
+                                                    <Icon name={row.icon} className="w-5 h-5" />
+                                                </div>
+                                                <span className="font-bold text-gray-800 leading-snug">{row.label}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-6 px-6 align-top">
+                                            <input type="text" placeholder="輸入現有額度..." className="w-full bg-transparent border-b border-gray-300 border-dashed pb-1 outline-none focus:border-blue-500 focus:border-solid text-lg text-blue-700 font-medium transition-colors" />
+                                            {row.hasDailyRate && (
+                                                <div className="mt-4 bg-[#fdfbf7] p-3 rounded-lg border border-[#e6e2dd] shadow-sm">
+                                                    <div className="text-xs font-bold text-[#8c7a6b] mb-2 border-b pb-1 flex items-center gap-1">
+                                                        <Icon name="stethoscope" className="w-3 h-3"/> 日額保障細節
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <div className="flex flex-col">
+                                                            <label className="text-[10px] text-gray-400 mb-0.5">終身險日額</label>
+                                                            <input type="text" className="w-full bg-transparent border-b border-gray-200 outline-none text-xs text-center p-0.5" placeholder="0" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <label className="text-[10px] text-gray-400 mb-0.5">定期險日額</label>
+                                                            <input type="text" className="w-full bg-transparent border-b border-gray-200 outline-none text-xs text-center p-0.5" placeholder="0" />
+                                                        </div>
+                                                        <div className="flex flex-col bg-blue-50/50 p-0.5 rounded">
+                                                            <label className="text-[10px] text-blue-700 font-bold mb-0.5">總日額</label>
+                                                            <input type="text" className="w-full bg-transparent border-b border-blue-200 outline-none text-xs font-bold text-blue-700 text-center p-0.5" placeholder="0" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="py-6 px-6 align-top">
+                                            <textarea placeholder="填寫專業分析與規劃建議..." className="w-full min-h-[60px] bg-transparent border-b border-gray-300 border-dashed pb-1 outline-none focus:border-red-500 focus:border-solid text-lg text-red-700 font-medium transition-colors resize-none" />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             );
         };
 
+        // 5. 商品櫥窗 (包含完整內容)
+        const PageProducts = () => {
+            const [cat, setCat] = useState('life');
+            const categories = [
+                { id: 'life', label: '壽險', icon: 'shield' },
+                { id: 'accident', label: '意外險', icon: 'activity' },
+                { id: 'medical', label: '醫療/手術', icon: 'stethoscope' },
+                { id: 'cancer', label: '防癌/尖端', icon: 'heart-pulse' },
+                { id: 'critical', label: '重疾/傷病', icon: 'shield-alert' },
+                { id: 'ltc', label: '長照/失能', icon: 'user-round' },
+            ];
+
+            const tedDiseases = [
+                "腦中風後障礙(重度)","急性心肌梗塞(重度)","冠狀動脈路徑型手術","末期腎病變","癌症(重度)","癱瘓(重度)","重大器官/造血幹細胞移植",
+                "嚴重阿茲海默氏症","嚴重巴金森氏症","嚴重類風濕性關節炎","嚴重全身性紅斑性狼瘡腎病變","嚴重克隆氏症或潰瘍性結腸炎","嚴重再生不良性貧血","多發性硬化症",
+                "嚴重肌肉失養症","嚴重肌萎縮性脊髓側索硬化症","嚴重運動神經元疾病","重度重症肌無力","脊髓灰質炎併發重度神經障礙","嚴重頭部創傷","深度昏迷",
+                "嚴重第三度燒燙傷", "主動脈外科置換手術", "心臟瓣膜開心手術", "慢性肝病合併肝衰竭","急性腦炎併發專屬神經障礙","嚴重細菌性腦膜炎","嚴重原發性肺動脈高血壓",
+                "嚴重慢性阻塞性肺病","嚴重肝硬化症","急性壞死性胰臟炎","克庫雅氏病","伊波拉病毒感染","進行性核上神經失調症","多系統萎縮症",
+                "嚴重氣喘","嚴重慢性縮窄性心包炎","嚴重原發性硬化性膽管炎","嚴重膽道閉鎖","嚴重瀰漫性硬皮病","嚴重特發性肺纖維化"
+            ];
+
+            return (
+                <div className="space-y-6 fade-in">
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                        {categories.map(c => (
+                            <button key={c.id} onClick={() => setCat(c.id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold whitespace-nowrap transition-all ${cat === c.id ? 'bg-[#8c7a6b] text-white shadow-md scale-105' : 'bg-white text-gray-500 border border-gray-200 hover:border-[#8c7a6b]'}`}>
+                                <Icon name={c.icon} className="w-4 h-4"/> {c.label}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {cat === 'life' && (
+                            <>
+                                <SectionTitle title="主約 (Main Contract)" />
+                                <StickyNote code="20NNPL" title="新康順終身保險" minUnit="10萬" recommend="30萬" color="bg-indigo-100" ageLimit="0-70歲 | 終身保障">
+                                    <p>• 終身壽險保障: <span className="font-bold text-blue-700">10萬元</span></p>
+                                    <p>• 涵蓋身故及完全失能理賠</p>
+                                    <p className="text-xs italic mt-1 opacity-70">最常見的醫療附約底層主約</p>
+                                </StickyNote>
+                                <StickyNote code="AYWTPL" title="佳倍享福利變型終身" minUnit="10萬" recommend="100~500萬" color="bg-violet-100" interestSensitive={true} ageLimit="0-74歲 | 至110歲">
+                                    <p>• 宣告利率機制: <span className="font-bold text-blue-700">增額回饋分享金</span></p>
+                                    <p>• 透過宣告利率抵禦通膨，適合資產傳承</p>
+                                </StickyNote>
+                                <StickyNote code="STL6" title="享添鑽利變型定期" minUnit="50萬" recommend="100萬" color="bg-indigo-50" interestSensitive={true} ageLimit="0-60歲 | 依約定年期">
+                                    <p>• 結合定期防護與宣告利率</p>
+                                    <p>• 身故及完全失能理賠</p>
+                                </StickyNote>
+                                <StickyNote code="MPL3" title="新福愛小額終身壽險" minUnit="10萬" recommend="30萬" color="bg-violet-50" ageLimit="0-84歲 | 終身保障">
+                                    <p>• 保費親民、投保門檻極低</p>
+                                    <p>• 建構基本人生尊嚴與喪葬費準備</p>
+                                </StickyNote>
+                                <StickyNote code="NTL2" title="新定期壽險" minUnit="50萬" recommend="300~500萬" color="bg-indigo-100" ageLimit="0-65歲 | 依約定年期">
+                                    <p>• 階段性身故保障: <span className="font-bold text-red-600">50萬元</span></p>
+                                    <p>• 純保障，保費最便宜</p>
+                                </StickyNote>
+                                <SectionTitle title="附約 (Rider)" />
+                                <StickyNote code="NTR2" title="新定期壽險附約" minUnit="50萬" recommend="100~300萬" color="bg-indigo-50" ageLimit="15-65歲 | 續保至75歲">
+                                    <p>• 階段性身故防護附約</p>
+                                    <p>• 靈活附加於既有主約，彈性補強</p>
+                                </StickyNote>
+                                <StickyNote code="N1TR" title="一年期壽險附約" minUnit="50萬" recommend="100~300萬" color="bg-indigo-50" ageLimit="15-65歲 | 續保至75歲">
+                                    <p>• 一年一約身故防護</p>
+                                    <p>• 低保費高保障的短期規劃利器</p>
+                                </StickyNote>
+                            </>
+                        )}
+
+                        {cat === 'accident' && (
+                            <>
+                                <SectionTitle title="主約 (Main Contract)" />
+                                <StickyNote code="SPA" title="青春動起來保險" minUnit="10萬" recommend="100萬" color="bg-amber-200" ageLimit="15-65歲 | 保障至85歲">
+                                    <p>• 意外身故: <span className="font-bold text-blue-700">10萬元</span></p>
+                                    <p>• 1-11級失能給付: <span className="font-bold">5千~10萬</span></p>
+                                </StickyNote>
+                                <StickyNote code="HWPA2" title="溢帆風順2保險" minUnit="50萬" recommend="100萬" color="bg-yellow-200" ageLimit="15-60歲 | 保障至85歲">
+                                    <p>• 重大運輸或特定意外加倍理賠</p>
+                                    <p>• 針對失能提供生活扶助金</p>
+                                </StickyNote>
+                                <StickyNote code="SBB" title="意外骨折及特定手術主約" minUnit="3萬" recommend="10萬" color="bg-amber-100" ageLimit="0-65歲 | 至80歲">
+                                    <p>• 意外骨折最高給付: <span className="font-bold text-blue-700">3萬元</span></p>
+                                    <p>• 依骨折程度(完全/不完全/龜裂)比例</p>
+                                </StickyNote>
+                                <SectionTitle title="附約 (Rider)" />
+                                <StickyNote code="PAMR" title="意外實支實付附約" minUnit="3萬" recommend="3~5萬" color="bg-yellow-100" ageLimit="0-65歲 | 續保至75歲">
+                                    <p>• 意外醫療收據實支: <span className="font-bold text-blue-700">3萬元</span></p>
+                                    <p>• 健保不給付耗材最佳防線</p>
+                                </StickyNote>
+                                <StickyNote code="SIPA" title="傷害保險附約" minUnit="10萬" recommend="100萬" color="bg-yellow-100" ageLimit="現行壽險附搭意外險">
+                                    <p>• 包含意外身故及1-11級失能給付</p>
+                                </StickyNote>
+                                <StickyNote code="BBMR" title="意外實支(含日額)" minUnit="1份" recommend="1份" color="bg-amber-100" ageLimit="0-65歲 | 續保至75歲">
+                                    <p>• 意外住院: <span className="font-bold text-blue-700">1,500元/天</span></p>
+                                    <p>• 骨折未住院津貼最高 <span className="font-bold text-red-600">4.5萬</span></p>
+                                </StickyNote>
+                                <StickyNote code="NAI" title="薪水補貼附約" minUnit="50萬" recommend="100萬" color="bg-yellow-200" ageLimit="不能工作補貼">
+                                    <p>• 完全不能工作: 每月約 <span className="font-bold text-red-600">1.5萬元</span></p>
+                                </StickyNote>
+                                <StickyNote code="AI" title="意外傷害保險附約" discontinued={true} color="bg-amber-50">
+                                    <p>早期商品，含交通意外加倍給付</p>
+                                </StickyNote>
+                            </>
+                        )}
+
+                        {cat === 'medical' && (
+                            <>
+                                <SectionTitle title="主約 (Main Contract)" />
+                                <StickyNote code="HPHI2" title="溢心守護2醫療保險" minUnit="500元" recommend="1000元" color="bg-sky-100" ageLimit="0-65歲 | 終身保障">
+                                    <p>• 終身手術與創傷縫合保障帳戶</p>
+                                    <p>• 住院/門診手術依表定倍數理賠</p>
+                                </StickyNote>
+                                <StickyNote code="HPCHI2" title="全新溢靠2醫療保險" minUnit="1單位" recommend="1單位" color="bg-blue-50" ageLimit="0-65歲 | 終身保障">
+                                    <p>• 終身手術防護 + 重大疾病(7項)保障</p>
+                                    <p>• 複合式終身醫療，涵蓋高階手術</p>
+                                </StickyNote>
+                                <StickyNote code="WEHS" title="住院醫療終身保險" minUnit="500元" color="bg-cyan-50" ageLimit="終身住院日額給付">
+                                    <p>• 建構基礎一輩子的住院防護傘</p>
+                                </StickyNote>
+                                <SectionTitle title="附約 (Rider)" />
+                                <StickyNote code="1HS" title="實踐幸福住院醫療附約" minUnit="計畫A" recommend="計畫A或B" color="bg-sky-100" ageLimit="0-70歲 | 續保至74歲">
+                                    <p>• 病房費: <span className="font-bold text-blue-700">3,000元/天</span></p>
+                                    <p>• 手術與雜費: 限額 <span className="font-bold text-red-600">20萬元</span></p>
+                                    <p>• 門診手術限額 <span className="font-bold text-blue-700">3萬元</span></p>
+                                </StickyNote>
+                                <StickyNote code="1HSD" title="超實踐幸福自負額" minUnit="計畫A" color="bg-blue-50" ageLimit="超額防護補強">
+                                    <p>• 提供 5萬~20萬 的自負額區間</p>
+                                    <p>• 附加於既有實支之上，擴大保障</p>
+                                </StickyNote>
+                                <StickyNote code="PHCB" title="進階高額實支實付" minUnit="計畫1" recommend="計畫5" color="bg-blue-50" ageLimit="0-65歲 | 續保至80歲">
+                                    <p>• 醫療雜費限額: <span className="font-bold text-red-600">20萬/次</span></p>
+                                    <p>• 有效補強達文西、高階自費醫材</p>
+                                </StickyNote>
+                                <StickyNote code="1NHI" title="新日溢幸福日額" minUnit="500元" color="bg-blue-100" ageLimit="含法傳加護補貼">
+                                    <p>• 法傳加護病房: <span className="font-bold text-red-600">1,000元/天</span></p>
+                                </StickyNote>
+                                <StickyNote code="HS" title="醫療實支(早期)" discontinued={true} color="bg-sky-50">
+                                    <p>早期經典實支，已被 1HS 取代</p>
+                                </StickyNote>
+                            </>
+                        )}
+
+                        {cat === 'cancer' && (
+                            <>
+                                <SectionTitle title="主約 (Main Contract)" />
+                                <StickyNote code="HCAB2" title="滿溢久久2防癌主約" minUnit="1單位" recommend="1~2單位" color="bg-red-100" ageLimit="0-60歲 | 終身保障">
+                                    <p className="text-[11px] font-bold text-gray-600 mb-1">涵蓋定額理賠細項:</p>
+                                    <div className="grid grid-cols-2 gap-1 text-[10px] font-bold text-gray-500">
+                                        <span>• 初次罹癌</span><span>• 癌症住院</span>
+                                        <span>• 癌症手術</span><span>• 癌症門診</span>
+                                        <span>• 放射/化療</span><span>• 出院療養</span>
+                                    </div>
+                                </StickyNote>
+                                <StickyNote code="SC" title="長青滿溢癌症定期" minUnit="1單位" color="bg-red-50" ageLimit="0-60歲 | 定期險">
+                                    <p>• 確診給付 <span className="font-bold text-red-600">10萬元</span></p>
+                                </StickyNote>
+                                <SectionTitle title="附約 (Rider) / 尖端醫療" />
+                                <StickyNote code="1CGT" title="癌症精準醫療附約" minUnit="1單位" color="bg-rose-100" ageLimit="基因檢測/標靶">
+                                    <p>• 癌症基因檢測: 最高 <span className="font-bold text-blue-700">3萬元</span></p>
+                                    <p>• 標靶藥物治療: <span className="font-bold text-red-600">10萬元</span></p>
+                                </StickyNote>
+                                <StickyNote code="1CPT" title="質子重粒子治療附約" minUnit="1單位" color="bg-red-100" ageLimit="高額自費放射治療">
+                                    <p>• 質子/重粒子治療: 定額 <span className="font-bold text-red-600">30萬元</span></p>
+                                </StickyNote>
+                                <StickyNote code="1SCT" title="幹細胞與免疫治療" minUnit="1單位" color="bg-rose-50" ageLimit="CAR-T等高階療法">
+                                    <p>• 特定細胞免疫療法: <span className="font-bold text-red-600">100萬元</span></p>
+                                </StickyNote>
+                                <StickyNote code="1RAS" title="機械手臂微創手術" minUnit="1單位" color="bg-red-100" ageLimit="達文西手術專屬">
+                                    <p>• 特定手術設備使用費: <span className="font-bold text-blue-700">10萬元</span></p>
+                                </StickyNote>
+                            </>
+                        )}
+
+                        {cat === 'critical' && (
+                            <>
+                                <SectionTitle title="主約 (Main Contract)" />
+                                <StickyNote code="HDD" title="活力洋溢3重大疾病" minUnit="10萬" recommend="20~100萬" color="bg-orange-100" ageLimit="0-65歲 | 終身保障">
+                                    <p>• 核心重疾確診給付: <span className="font-bold text-red-600">10萬元</span></p>
+                                    <p>• 無身故退還保費機制 (純保障型)</p>
+                                </StickyNote>
+                                <StickyNote code="HPDD" title="重傷終身主約 (保本)" minUnit="10萬" recommend="20~100萬" color="bg-orange-100" ageLimit="身故退還保費機制">
+                                    <p>• 憑「重大傷病卡」理賠 <span className="font-bold text-red-600">10萬元</span></p>
+                                    <p>• 兼顧長期防護與保本規劃</p>
+                                </StickyNote>
+                                <StickyNote code="TED" title="精選傷病定期保險" minUnit="10萬" color="bg-orange-50" ageLimit="涵蓋 41 項特定傷病">
+                                    <p>• 依病況程度給付不同比例一次金</p>
+                                </StickyNote>
+                                <SectionTitle title="附約 (Rider)" />
+                                <StickyNote code="1TED" title="遇見幸福精選傷病附約" minUnit="10萬" recommend="100萬" color="bg-amber-100" ageLimit="0-70歲 | 續保至80歲">
+                                    <p>• 一年一約，涵蓋現行 <span className="font-bold text-red-600">41 項</span> 傷病</p>
+                                    <p>• 靈活搭配主約，強化一次金保障</p>
+                                </StickyNote>
+                                <div className="col-span-full mt-4 bg-white p-5 rounded-xl border border-orange-200 shadow-sm">
+                                    <h3 className="text-lg font-bold text-[#4a4036] mb-3 border-b pb-2 flex items-center gap-2">
+                                        <Icon name="shield-alert" className="w-5 h-5 text-orange-500" /> 現行 TED 特定傷病範圍 (41項)
+                                    </h3>
+                                    <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-1.5 text-xs text-gray-700">
+                                        {tedDiseases.map((disease, idx) => (
+                                            <li key={idx} className="flex items-start gap-1">
+                                                <span className="text-orange-400">•</span> {idx+1}. {disease}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </>
+                        )}
+
+                        {cat === 'ltc' && (
+                            <>
+                                <SectionTitle title="主約 (Main Contract)" />
+                                <StickyNote code="HRLTC2" title="溢路相守2長期照顧" minUnit="1萬" recommend="2~3萬" color="bg-green-100" ageLimit="0-65歲 | 至99歲">
+                                    <p>• 長照一次金: <span className="font-bold text-red-600">6萬元</span></p>
+                                    <p>• 分期長照金: 每月 <span className="font-bold text-blue-700">1萬元</span></p>
+                                </StickyNote>
+                                <StickyNote code="FLTC" title="輕鬆陪伴長照保險" minUnit="1萬" color="bg-emerald-50" ageLimit="保障至85歲">
+                                    <p>• 長年期長照險主約</p>
+                                    <p>• 分期給付最高達 192 個月</p>
+                                </StickyNote>
+                                <SectionTitle title="附約 (Rider)" />
+                                <StickyNote code="1LTC" title="一年期長照險附約" minUnit="1萬" recommend="3單位" color="bg-green-100" ageLimit="0-70歲 | 續保至75歲">
+                                    <p>• 第一年理賠一次金: <span className="font-bold text-red-600">32萬元</span></p>
+                                    <p>• 第二年起每年賠 <span className="font-bold text-blue-700">12萬</span> (最高16年)</p>
+                                </StickyNote>
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // 6. 聯絡資訊
         const PageContact = () => (
-            <div className="flex items-center justify-center min-h-[70vh]">
+            <div className="flex items-center justify-center min-h-[70vh] fade-in">
                 <div className="bg-[#4a4036] text-white p-12 rounded-[3rem] shadow-2xl w-full max-w-lg text-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                    <h2 className="text-2xl font-bold mb-10 tracking-widest border-b border-white/10 pb-4">聯絡資訊</h2>
-                    <div className="w-24 h-24 bg-[#a39171] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white/20 shadow-inner">
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#a39171]/20 rounded-full -translate-x-1/2 translate-y-1/2"></div>
+                    <h2 className="text-2xl font-bold mb-10 tracking-widest border-b border-white/20 pb-4 inline-block">聯絡資訊</h2>
+                    <div className="w-24 h-24 bg-[#a39171] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white/20 shadow-lg">
                         <Icon name="user" className="w-12 h-12" />
                     </div>
-                    <p className="text-gray-400 text-sm mb-2">您的保險規劃顧問</p>
+                    <p className="text-gray-400 text-sm mb-2">專屬保險規劃顧問</p>
                     <h3 className="text-5xl font-black mb-10 tracking-tighter">趙于翔</h3>
                     <div className="space-y-4">
                         <a href="tel:0968771572" className="flex items-center justify-center gap-4 bg-white/10 py-4 rounded-2xl hover:bg-white/20 transition-all border border-white/5">
                             <Icon name="phone" className="text-[#a39171]" /> <span className="text-xl font-bold">0968-771572</span>
                         </a>
                         <div className="flex items-center justify-center gap-4 bg-white/10 py-4 rounded-2xl border border-white/5">
-                            <Icon name="message-circle" className="text-[#a39171]" /> <span className="text-xl font-bold">Line: 520b0130</span>
+                            <Icon name="message-circle" className="text-[#a39171]" /> <span className="text-xl font-bold">Line ID: 520b0130</span>
                         </div>
                     </div>
                     <p className="mt-12 text-gray-500 text-xs">© 2026 趙于翔保險規劃顧問 版權所有</p>
@@ -220,7 +572,8 @@
 
             const navItems = [
                 { id: 'home', label: '首頁封面', icon: 'home' },
-                { id: 'concept', label: '理財觀念', icon: 'lightbulb' },
+                { id: 'concept', label: '三階段觀念', icon: 'lightbulb' },
+                { id: 'core', label: '醫療核心', icon: 'shield-check' },
                 { id: 'checkup', label: '保單健診', icon: 'clipboard-list' },
                 { id: 'products', label: '商品櫥窗', icon: 'layout-grid' },
                 { id: 'contact', label: '聯絡顧問', icon: 'user' },
@@ -230,12 +583,18 @@
                 switch(currentPage) {
                     case 'home': return <PageHome />;
                     case 'concept': return <PageConcept />;
+                    case 'core': return <PageCore />;
                     case 'checkup': return <PageCheckup />;
                     case 'products': return <PageProducts />;
                     case 'contact': return <PageContact />;
                     default: return <PageHome />;
                 }
             };
+
+            // 自動回到頂端
+            useEffect(() => {
+                window.scrollTo(0, 0);
+            }, [currentPage]);
 
             return (
                 <div className="flex min-h-screen">
@@ -247,9 +606,9 @@
                             </div>
                             <h1 className="text-white font-black text-xl tracking-tighter">專業規劃系統</h1>
                         </div>
-                        <div className="space-y-2 flex-grow">
+                        <div className="space-y-2 flex-grow overflow-y-auto no-scrollbar">
                             {navItems.map(item => (
-                                <button key={item.id} onClick={() => setCurrentPage(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${currentPage === item.id ? 'active-nav shadow-lg' : 'hover:bg-white/5'}`}>
+                                <button key={item.id} onClick={() => setCurrentPage(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${currentPage === item.id ? 'active-nav shadow-lg scale-105' : 'hover:bg-white/5'}`}>
                                     <Icon name={item.icon} /> {item.label}
                                 </button>
                             ))}
@@ -258,8 +617,13 @@
 
                     {/* 手機版頂欄 */}
                     <div className="lg:hidden fixed top-0 w-full bg-[#4a4036] text-white p-4 flex justify-between items-center z-[60] shadow-md">
-                        <span className="font-black tracking-tighter">趙于翔保險規劃</span>
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2"><Icon name={isMenuOpen ? "x" : "menu"} /></button>
+                        <div className="flex items-center gap-2">
+                            <Icon name="shield" className="w-5 h-5 text-[#8c7a6b]" />
+                            <span className="font-black tracking-tighter">趙于翔保險規劃</span>
+                        </div>
+                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 transition-transform active:scale-90">
+                            <Icon name={isMenuOpen ? "x" : "menu"} />
+                        </button>
                     </div>
 
                     {/* 手機版選單彈窗 */}
@@ -274,7 +638,7 @@
                     )}
 
                     {/* 主內容區 */}
-                    <main className="flex-grow lg:ml-64 p-6 pt-24 lg:pt-12 max-w-7xl mx-auto w-full transition-all duration-500">
+                    <main className="flex-grow lg:ml-64 p-6 pt-24 lg:pt-12 max-w-7xl mx-auto w-full transition-all duration-500 overflow-x-hidden">
                         {renderPage()}
                     </main>
                 </div>

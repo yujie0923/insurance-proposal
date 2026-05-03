@@ -3,505 +3,657 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全方位保險規劃 - 趙于翔</title>
-    <!-- Tailwind CSS -->
+    <title>全方位保險規劃系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        /* 自訂滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c5b8a8; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a39171; 
+        }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <!-- 投影片容器 -->
+    <main id="slider-container" class="flex-grow relative overflow-hidden"></main>
 
-        // 圖示元件
-        const Icon = ({ name, className = "w-5 h-5" }) => {
-            useEffect(() => { 
-                if (window.lucide) window.lucide.createIcons(); 
-            }, [name]);
-            return <i data-lucide={name} className={className}></i>;
-        };
+    <!-- 底部導覽列 -->
+    <footer class="bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between shrink-0 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] z-50">
+        <button id="btn-prev" onclick="prevSlide()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-[#4a4036] hover:bg-gray-100 shadow-sm border border-gray-200 hover:border-gray-300 disabled:text-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i> 上一頁
+        </button>
+        <div id="dots-container" class="flex gap-3"></div>
+        <button id="btn-next" onclick="nextSlide()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-[#4a4036] hover:bg-gray-100 shadow-sm border border-gray-200 hover:border-gray-300 disabled:text-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed">
+            下一頁 <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </button>
+    </footer>
 
-        // --- 輔助元件: 橫向單欄商品卡片 ---
-        const ProductRowCard = ({ title, code, minUnit, recommend, color = "border-blue-200", discontinued = false, interestSensitive = false, ageLimit, highlight, children }) => (
-            <div className={`w-full bg-white rounded-xl shadow-sm border-l-4 ${color} border-y border-r border-gray-200 flex flex-col lg:flex-row relative overflow-hidden group hover:shadow-md transition-shadow mb-4`}>
-                {discontinued && (
-                    <div className="absolute top-0 right-0 bg-gray-500 text-white text-[10px] font-bold px-4 py-1 rounded-bl-lg shadow-sm tracking-widest z-10 pointer-events-none">
-                        已停售
-                    </div>
-                )}
-                
-                {/* 左側：商品基本資訊 */}
-                <div className="w-full lg:w-1/3 bg-gray-50/50 p-5 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col justify-center">
-                    <div className="flex items-center gap-2 mb-1.5">
-                        <h4 className={`font-black text-2xl tracking-tight ${discontinued ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                            {code}
-                        </h4>
-                        {interestSensitive && (
-                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 text-[10px] font-bold rounded-full border border-blue-200 flex items-center gap-1">
-                                <Icon name="zap" className="w-3 h-3" /> 利變型
-                            </span>
-                        )}
-                    </div>
-                    <span className={`text-base font-bold mb-3 ${discontinued ? 'text-gray-400' : 'text-[#5a4f43]'}`}>
-                        {title}
-                    </span>
-                    
-                    <div className="flex flex-wrap gap-2 mt-auto">
-                        {minUnit && (
-                            <span className={`px-2.5 py-1 text-xs font-black rounded text-white ${discontinued ? 'bg-gray-400' : 'bg-orange-600'}`}>
-                                最低 {minUnit}
-                            </span>
-                        )}
-                        {recommend && (
-                            <span className={`px-2.5 py-1 text-xs font-black rounded border ${discontinued ? 'border-gray-300 text-gray-400' : 'border-red-200 text-red-600 bg-red-50'}`}>
-                                建議 {recommend}
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* 右側：商品特點與內容 */}
-                <div className="w-full lg:w-2/3 p-5 flex flex-col">
-                    {highlight && !discontinued && (
-                        <div className="bg-orange-50/80 rounded-md p-2.5 mb-3 border border-orange-100 text-sm font-bold text-orange-900 flex items-start gap-2">
-                            <Icon name="target" className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                            <span>{highlight}</span>
-                        </div>
-                    )}
-
-                    <div className={`text-sm space-y-2 leading-relaxed font-medium flex-grow ${discontinued ? 'text-gray-400' : 'text-gray-700'}`}>
-                        {children}
-                    </div>
-
-                    {ageLimit && (
-                        <div className={`mt-4 pt-3 border-t border-gray-100 text-xs font-semibold text-right ${discontinued ? 'text-gray-400' : 'text-gray-500'} tracking-wide`}>
-                            {ageLimit}
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-
-        const SectionTitle = ({ title, subtitle }) => (
-            <div className="w-full mb-4 mt-8 first:mt-0">
-                <h3 className="text-2xl font-black text-[#4a4036] flex items-center gap-2 mb-1">
-                    <Icon name="shield-alert" className="w-6 h-6 text-[#8c7a6b]" /> {title}
-                </h3>
-                {subtitle && <p className="text-sm font-bold text-[#8c7a6b] ml-8">{subtitle}</p>}
-                <div className="h-1 w-full bg-gradient-to-r from-[#8c7a6b] to-transparent mt-2 rounded-full opacity-50"></div>
-            </div>
-        );
-
-        // === 各分頁內容 ===
-
-        const SlideHome = () => (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6 bg-[#fdfbf7] relative overflow-hidden animate-fade-in">
-                <div className="absolute top-0 left-0 w-full h-4 bg-[#8c7a6b]"></div>
-                <div className="w-28 h-28 bg-[#8c7a6b] rounded-full flex items-center justify-center mb-8 shadow-2xl text-white">
-                    <Icon name="file-heart" className="w-14 h-14" />
-                </div>
-                <h1 className="text-5xl md:text-6xl font-black text-[#4a4036] mb-4 tracking-tighter">全方位保險規劃</h1>
-                <h2 className="text-2xl md:text-3xl text-[#8c7a6b] mb-16 tracking-widest font-light uppercase">Risk Planning Proposal</h2>
-                <div className="mt-auto border-t border-[#d4cfc9] pt-12 w-full max-w-md">
-                    <p className="text-xl text-[#8c7a6b] font-medium tracking-widest">專屬保險規劃顧問</p>
-                    <p className="text-4xl font-black text-[#4a4036] mt-3">趙于翔</p>
-                </div>
-            </div>
-        );
-
-        const SlideConcept = () => (
-            <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] animate-fade-in overflow-y-auto no-scrollbar">
-                <h2 className="text-3xl font-black text-[#4a4036] mb-2 border-l-8 border-[#8c7a6b] pl-4">科學化保險配置</h2>
-                <p className="text-lg text-[#8c7a6b] mb-6 pl-5 font-bold">用 10% 的預算，守護 90% 的資產安全</p>
-                <div className="flex flex-col lg:flex-row gap-8 flex-grow">
-                    <div className="w-full lg:w-3/5 bg-white p-6 rounded-3xl shadow-sm border border-[#e6e2dd] flex flex-col justify-center">
-                        <h3 className="text-center font-black text-gray-800 text-lg mb-6">人生收支與風險缺口圖</h3>
-                        <svg viewBox="0 0 400 220" className="w-full h-auto drop-shadow-sm">
-                            <line x1="20" y1="180" x2="380" y2="180" stroke="#a8a29e" strokeWidth="2" />
-                            <text x="60" y="200" fontSize="13" fill="#78716c" fontWeight="bold">撫養期</text>
-                            <text x="180" y="200" fontSize="13" fill="#78716c" fontWeight="bold">奮鬥期</text>
-                            <text x="320" y="200" fontSize="13" fill="#78716c" fontWeight="bold">養老期</text>
-                            <path d="M 20 180 Q 200 60 380 180" fill="none" stroke="#78716c" strokeWidth="2" strokeDasharray="5,5" />
-                            <path d="M 90 180 C 130 40, 180 30, 210 30 C 240 30, 260 100, 280 180" fill="none" stroke="#3b82f6" strokeWidth="4" />
-                            <text x="110" y="70" fontSize="13" fill="#2563eb" fontWeight="900">工作收入線</text>
-                            <line x1="210" y1="30" x2="210" y2="180" stroke="#ef4444" strokeWidth="2" strokeDasharray="4,4" />
-                            <circle cx="210" cy="30" r="5" fill="#ef4444" />
-                            <text x="210" y="18" fontSize="13" fill="#dc2626" fontWeight="900" textAnchor="middle">收入中斷點</text>
-                            <path d="M 140 180 L 360 50" fill="none" stroke="#10b981" strokeWidth="3" />
-                            <text x="310" y="40" fontSize="13" fill="#059669" fontWeight="900">理財準備金</text>
-                        </svg>
-                        <div className="mt-8 text-sm text-gray-700 space-y-2 bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                            <p className="flex items-start gap-2"><span className="text-blue-600 font-black w-20 shrink-0">活太短：</span> 家庭責任、房貸債務 (需壽險)</p>
-                            <p className="flex items-start gap-2"><span className="text-red-600 font-black w-20 shrink-0">走不了：</span> 失能長病、高額醫療費 (需醫療/長照)</p>
-                        </div>
-                    </div>
-                    <div className="w-full lg:w-2/5 flex flex-col gap-6">
-                        <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center">
-                            <h3 className="font-black text-gray-800 mb-4">保險規劃金字塔</h3>
-                            <div className="w-full max-w-[200px]">
-                                <svg viewBox="0 0 200 150" className="w-full h-auto">
-                                    <path d="M 0 150 L 200 150 L 166.6 100 L 33.3 100 Z" fill="#d4cfc9" stroke="#fff" strokeWidth="2" />
-                                    <path d="M 33.3 100 L 166.6 100 L 133.3 50 L 66.6 50 Z" fill="#e8e4db" stroke="#fff" strokeWidth="2" />
-                                    <path d="M 66.6 50 L 133.3 50 L 100 0 Z" fill="#f5f1ea" stroke="#fff" strokeWidth="2" />
-                                    <text x="100" y="132" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#4a4036">醫療保障 (基礎)</text>
-                                    <text x="100" y="82" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#4a4036">財務規劃 (增值)</text>
-                                    <text x="100" y="38" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#4a4036">資產傳承 (守成)</text>
-                                </svg>
+    <!-- 系統與商品資料庫 (JavaScript) -->
+    <script>
+        // ==========================================
+        // 投影片內容定義 (HTML字串)
+        // ==========================================
+        const slidesHTML = [
+            // Slide 1: 核心觀念 (移除封面後，此為第一頁)
+            `
+            <div class="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] animate-fade-in overflow-y-auto">
+                <h2 class="text-3xl font-bold text-[#4a4036] mb-2 border-l-4 border-[#8c7a6b] pl-4 shrink-0">科學化保險配置</h2>
+                <p class="text-lg text-[#8c7a6b] mb-6 pl-5 shrink-0 font-medium">用 10% 的防護預算，鎖定 90% 的資產安全</p>
+                <div class="flex-grow flex flex-col gap-6">
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="w-full lg:w-3/5 bg-white p-6 rounded-2xl shadow-sm border border-[#e6e2dd] relative flex flex-col justify-center">
+                            <h3 class="text-center font-black text-gray-800 text-lg mb-4">人生的四大風險缺口</h3>
+                            <svg viewBox="0 0 400 220" class="w-full h-auto drop-shadow-sm">
+                                <line x1="20" y1="180" x2="380" y2="180" stroke="#a8a29e" stroke-width="2" />
+                                <text x="60" y="200" font-size="13" fill="#78716c" font-weight="bold">撫養期</text>
+                                <text x="180" y="200" font-size="13" fill="#78716c" font-weight="bold">奮鬥期</text>
+                                <text x="320" y="200" font-size="13" fill="#78716c" font-weight="bold">養老期</text>
+                                <path d="M 20 180 Q 200 60 380 180" fill="none" stroke="#78716c" stroke-width="2" stroke-dasharray="5,5" />
+                                <path d="M 90 180 C 130 40, 180 30, 210 30 C 240 30, 260 100, 280 180" fill="none" stroke="#3b82f6" stroke-width="4" />
+                                <text x="110" y="70" font-size="13" fill="#2563eb" font-weight="900">工作收入線</text>
+                                <line x1="210" y1="30" x2="210" y2="180" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4" />
+                                <circle cx="210" cy="30" r="5" fill="#ef4444" />
+                                <text x="210" y="18" font-size="13" fill="#dc2626" font-weight="900" text-anchor="middle">意外/疾病導致收入中斷</text>
+                                <circle cx="170" cy="110" r="4" fill="#d97706" />
+                                <text x="178" y="114" font-size="12" fill="#d97706" font-weight="900">高昂醫療/長照費用</text>
+                                <path d="M 140 180 L 360 50" fill="none" stroke="#10b981" stroke-width="3" marker-end="url(#arrow)" />
+                                <text x="310" y="40" font-size="13" fill="#059669" font-weight="900">理財準備金</text>
+                                <defs>
+                                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                                        <path d="M0,0 L0,6 L9,3 z" fill="#10b981" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                            <div class="mt-6 text-sm text-gray-700 space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                <p class="flex items-start gap-2"><span class="text-blue-600 font-bold w-24 shrink-0">活太短：</span> 家庭責任未了、債務留存 (需壽險撐腰)</p>
+                                <p class="flex items-start gap-2"><span class="text-green-600 font-bold w-24 shrink-0">活太長：</span> 退休金耗盡、通膨侵蝕 (需資產配置)</p>
+                                <p class="flex items-start gap-2"><span class="text-red-600 font-bold w-24 shrink-0">收入中斷：</span> 疾病或意外導致無法工作 (需意外/醫療險)</p>
+                                <p class="flex items-start gap-2"><span class="text-orange-600 font-bold w-24 shrink-0">失能長年病：</span> 長期照護費用拖垮全家 (需長照失能險)</p>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex-grow flex flex-col justify-center text-center">
-                            <h3 className="font-black text-gray-800 mb-4">家庭財務 10/25/40 矩陣</h3>
-                            <div className="grid grid-cols-2 gap-2 max-w-[200px] mx-auto">
-                                <div className="bg-gray-100 p-3 rounded-lg text-xs font-bold">支出 40%</div>
-                                <div className="bg-gray-100 p-3 rounded-lg text-xs font-bold">投資 25%</div>
-                                <div className="bg-orange-100 p-3 rounded-lg text-xs font-bold text-orange-700 ring-2 ring-orange-400">風險 10%</div>
-                                <div className="bg-gray-100 p-3 rounded-lg text-xs font-bold">負債 25%</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
 
-        const SlideCore = () => (
-            <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#f5f1ea] animate-fade-in overflow-y-auto no-scrollbar">
-                <h2 className="text-3xl font-black text-[#4a4036] mb-8 text-center shrink-0 tracking-wide underline decoration-[#8c7a6b] underline-offset-8">醫療保障：六大核心基石</h2>
-                <div className="flex flex-col lg:flex-row items-center justify-center gap-12 py-4">
-                    <div className="relative w-[340px] h-[340px] shrink-0 mx-auto">
-                        <div className="absolute top-[0px] left-[110px] w-[120px] h-[120px] bg-gradient-to-br from-[#8c7a6b] to-[#6b5f54] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-50">
-                            <span className="text-2xl font-black">壽險</span>
-                        </div>
-                        <div className="absolute top-[80px] left-[10px] w-[120px] h-[120px] bg-gradient-to-br from-[#a39171] to-[#8c7a6b] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-40">
-                            <span className="text-2xl font-black">意外</span>
-                        </div>
-                        <div className="absolute top-[80px] left-[210px] w-[120px] h-[120px] bg-gradient-to-br from-[#a39171] to-[#8c7a6b] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-40">
-                             <span className="text-2xl font-black">住院</span>
-                        </div>
-                        <div className="absolute top-[180px] left-[50px] w-[120px] h-[120px] bg-gradient-to-br from-[#bdaaa4] to-[#a39171] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-30">
-                             <span className="text-2xl font-black">防癌</span>
-                        </div>
-                        <div className="absolute top-[180px] left-[170px] w-[120px] h-[120px] bg-gradient-to-br from-[#bdaaa4] to-[#a39171] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-30">
-                             <span className="text-2xl font-black">手術</span>
-                        </div>
-                        <div className="absolute top-[280px] left-1/2 transform -translate-x-1/2 w-full text-center z-50">
-                            <div className="inline-block bg-orange-600 text-white px-8 py-3 rounded-full shadow-xl border-4 border-[#f5f1ea]">
-                                <span className="text-3xl font-black tracking-widest">長照與失能</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="w-full lg:w-1/2 max-w-lg space-y-6">
-                        <div className="bg-white p-6 rounded-2xl shadow-md border border-red-100">
-                            <h3 className="text-xl font-black text-gray-900 mb-4 border-b-2 border-red-100 pb-2 flex items-center gap-2">
-                                <Icon name="alert-circle" className="text-red-500"/> 七大重大疾病一次金
-                            </h3>
-                            <ul className="grid grid-cols-2 gap-3 text-sm font-bold text-gray-700">
-                                <li>1. 腦中風後障礙(重度)</li>
-                                <li>2. 急性心肌梗塞(重度)</li>
-                                <li>3. 冠狀動脈繞道手術</li>
-                                <li>4. 末期腎病變 (洗腎)</li>
-                                <li>5. 癌症 (重度)</li>
-                                <li>6. 癱瘓 (重度)</li>
-                                <li className="col-span-2">7. 重大器官/造血幹細胞移植</li>
-                            </ul>
-                        </div>
-                        <div className="bg-gradient-to-br from-yellow-100 to-amber-50 p-6 rounded-2xl shadow-md border border-yellow-300">
-                            <p className="font-black text-xl mb-2 text-gray-900">配置順序：先大再小，先家長再小孩</p>
-                            <p className="text-gray-700 font-bold leading-relaxed">優先轉嫁無法承受的風險（如百萬醫療費、長照金），穩定家庭支柱後，再規劃儲蓄與子女教育。</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-
-        const SlideCheckup = () => (
-            <div className="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] animate-fade-in overflow-y-auto no-scrollbar">
-                <h2 className="text-3xl font-black text-[#4a4036] mb-2 border-l-8 border-[#8c7a6b] pl-4">保單健診與缺口分析</h2>
-                <p className="text-lg text-[#8c7a6b] mb-6 pl-5 font-bold">盤點既有資源，補強風險缺口 (可點擊輸入)</p>
-                <div className="bg-white rounded-3xl shadow-xl overflow-x-auto border border-[#e6e2dd] flex-grow">
-                    <table className="w-full text-left min-w-[800px]">
-                        <thead className="bg-[#4a4036] text-white">
-                            <tr>
-                                <th className="p-6 font-black text-xl w-1/3">風險類別</th>
-                                <th className="p-6 font-black text-xl w-1/3">現有額度</th>
-                                <th className="p-6 font-black text-xl w-1/3">顧問建議</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {[
-                                { label: '壽險保障', icon: 'shield', color: 'text-blue-600' },
-                                { label: '意外傷害', icon: 'activity', color: 'text-amber-500' },
-                                { label: '住院/手術', icon: 'stethoscope', color: 'text-sky-500' },
-                                { label: '癌症/重疾', icon: 'heart-pulse', color: 'text-rose-500' },
-                                { label: '長照/失能', icon: 'user-round', color: 'text-emerald-600' }
-                            ].map((row, idx) => (
-                                <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                    <td className="p-6 flex items-center gap-4">
-                                        <Icon name={row.icon} className={`w-8 h-8 ${row.color}`} />
-                                        <span className="font-black text-xl text-gray-800">{row.label}</span>
-                                    </td>
-                                    <td className="p-6"><textarea className="w-full h-24 p-4 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-100 resize-none font-medium text-blue-800" placeholder="點擊輸入..."></textarea></td>
-                                    <td className="p-6"><textarea className="w-full h-24 p-4 rounded-xl border border-orange-100 bg-orange-50/30 outline-none focus:ring-2 focus:ring-orange-100 resize-none font-bold text-orange-800" placeholder="分析缺口..."></textarea></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        );
-
-        const SlideProducts = () => {
-            const [cat, setCat] = useState('life');
-            const categories = [
-                { id: 'life', label: '壽險規劃', icon: 'shield' },
-                { id: 'accident', label: '意外防護', icon: 'activity' },
-                { id: 'medical', label: '住院/手術', icon: 'stethoscope' },
-                { id: 'cancer', label: '防癌/尖端', icon: 'heart-pulse' },
-                { id: 'critical', icon: 'shield-alert', label: '重疾/傷病' },
-                { id: 'ltc', icon: 'user-round', label: '長照/失能' }
-            ];
-
-            const tedDiseases = [
-                "腦中風後障礙(重度)", "急性心肌梗塞(重度)", "冠狀動脈繞道手術", "末期腎病變(洗腎)", "癌症(重度)", "癱瘓(重度)", "重大器官/造血幹細胞移植",
-                "嚴重阿茲海默氏症", "嚴重巴金森氏症", "嚴重類風濕性關節炎", "嚴重全身性紅斑性狼瘡腎病變", "嚴重克隆氏症或潰瘍性結腸炎", "嚴重再生不良性貧血", "多發性硬化症",
-                "嚴重肌肉失養症", "嚴重肌萎縮性脊髓側索硬化症(漸凍人)", "嚴重運動神經元疾病", "重度重症肌無力", "脊髓灰質炎併發重度神經障礙", "嚴重頭部創傷", "深度昏迷",
-                "嚴重第三度燒燙傷", "主動脈外科置換手術", "心臟瓣膜開心手術", "慢性肝病合併肝衰竭", "急性腦炎併發專屬神經障礙", "嚴重細菌性腦膜炎", "嚴重原發性肺動脈高血壓",
-                "嚴重慢性阻塞性肺病", "嚴重肝硬化症", "急性壞死性胰臟炎", "克雅二氏病", "伊波拉病毒感染", "進行性核上神經失調症", "多系統萎縮症",
-                "嚴重氣喘", "嚴重慢性縮窄性心包炎", "嚴重原發性硬化性膽管炎", "嚴重膽道閉鎖", "嚴重瀰漫性硬皮病", "嚴重特發性肺纖維化"
-            ];
-
-            return (
-                <div className="flex flex-col h-full bg-[#f4f1ea] animate-fade-in">
-                    <div className="bg-white px-6 pt-4 flex gap-2 overflow-x-auto no-scrollbar shadow-md z-10 border-b border-gray-200">
-                        {categories.map(c => (
-                            <button key={c.id} onClick={() => setCat(c.id)} className={`flex items-center gap-2 px-6 py-4 rounded-t-2xl font-black text-lg transition-all whitespace-nowrap border-b-4 ${cat === c.id ? 'bg-gray-50 border-[#8c7a6b] text-[#4a4036]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-                                <Icon name={c.icon} className="w-5 h-5"/> {c.label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex-grow p-6 md:px-12 overflow-y-auto no-scrollbar pb-32">
-                        {cat === 'life' && (
-                            <>
-                                <SectionTitle title="主約 (Main Contract)" subtitle="建構醫療附約的地基或資產傳承核心" />
-                                <ProductRowCard code="20NNPL" title="新康順終身保險" minUnit="10萬" recommend="30萬" color="border-indigo-400" highlight="最平價的終身醫療附約底座" ageLimit="0-70歲 | 保障終身">
-                                    <p>• 提供基礎終身壽險防護：10萬元起。</p>
-                                    <p>• 涵蓋身故及完全失能理賠。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="AYWTPL" title="佳倍享福利變型終身" minUnit="10萬" recommend="100~500萬" color="border-indigo-500" interestSensitive={true} highlight="資產傳承、抗通膨利器" ageLimit="0-74歲 | 至110歲">
-                                    <p>• 具備宣告利率機制，有機會獲取增額回饋分享金。</p>
-                                    <p>• 適合預留稅源與中長期資產配置。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="ARTER" title="大樂選利變還本定期" minUnit="10萬" recommend="100萬" color="border-blue-400" interestSensitive={true} highlight="創造穩定現金流" ageLimit="0-74歲 | 依年期">
-                                    <p>• 繳費年期靈活，結合宣告利率，提供生存還本金。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="NTL2" title="新定期壽險" minUnit="50萬" recommend="300~500萬" color="border-indigo-300" highlight="低保費、高保障的房貸守護神" ageLimit="0-65歲 | 依年期">
-                                    <p>• 階段性高額身故保障，純保障型不還本，保費最省。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="MPL3" title="新福愛小額終身壽險" minUnit="10萬" recommend="30萬" color="border-purple-400" highlight="政府政策型、投保門檻極低" ageLimit="0-84歲 | 終身保障">
-                                    <p>• 適合建立基本喪葬費或人生最終尊嚴保障。</p>
-                                </ProductRowCard>
-                                <SectionTitle title="附約 (Rider)" />
-                                <ProductRowCard code="NTR2" title="新定期壽險附約" minUnit="50萬" recommend="100~300萬" color="border-gray-400" highlight="低成本補強階段責任" ageLimit="15-65歲 | 最高續保至75歲">
-                                    <p>• 隨主約附加，彈性調高房貸或子女教育責任高點的身故保障。</p>
-                                </ProductRowCard>
-                            </>
-                        )}
-
-                        {cat === 'accident' && (
-                            <>
-                                <SectionTitle title="意外險主約與組合" />
-                                <ProductRowCard code="SPA" title="青春動起來保險" minUnit="100萬" recommend="200萬" color="border-amber-400" highlight="熱血青年的專屬護身符" ageLimit="15-65歲 | 至85歲">
-                                    <p>• 包含身故、1-11級失能理賠，針對機車族、登山活動補強。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="SBB" title="意外骨折及特定手術主約" minUnit="10萬" recommend="30萬" color="border-orange-400" highlight="機車族必備的骨折神單" ageLimit="0-65歲 | 至80歲">
-                                    <p>• 依骨折程度(完全/不完全/龜裂)定額給付一次金。</p>
-                                </ProductRowCard>
-                                <SectionTitle title="附約 (Rider)" />
-                                <ProductRowCard code="NAI" title="新傷害保險附約(薪資補償)" minUnit="20萬" recommend="100萬" color="border-amber-500" highlight="業界罕見的『薪水保險』" ageLimit="15-64歲 | 至65歲">
-                                    <p>• 因意外導致不能工作，提供每週薪資補貼（完全不能工作 7.5‰ / 部分 1.25‰）。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="PAMR" title="實支實付傷害醫療附約" minUnit="3萬" recommend="5~10萬" color="border-yellow-400" highlight="對抗自費醫材的第一道防線" ageLimit="0-65歲 | 至75歲">
-                                    <p>• 轉嫁健保不給付的急診、耗材、高階敷料等雜費收據。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="BBI" title="傷害醫療日額附加條款" minUnit="500元" recommend="1000元" color="border-amber-300" highlight="含『骨折未住院津貼』" ageLimit="0-65歲 | 至75歲">
-                                    <p>• 住院定額給付，且骨折未住院在家休息亦能依比例理賠。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="SBBR" title="意外骨折及特定手術附約" minUnit="3萬" recommend="10萬" color="border-amber-400" ageLimit="0-65歲 | 至75歲">
-                                    <p>• 隨主約附加，小保費換大骨折防護。</p>
-                                </ProductRowCard>
-                            </>
-                        )}
-
-                        {cat === 'medical' && (
-                            <>
-                                <SectionTitle title="醫療實支實付 (核心)" />
-                                <ProductRowCard code="1HS" title="實踐幸福住院醫療附約" minUnit="計畫A" recommend="計畫A或B" color="border-sky-400" highlight="住院雜費與日額『擇優給付』" ageLimit="0-70歲 | 至74歲">
-                                    <p>• 手術與醫療雜費合併限額 20萬，門診手術亦有 3萬 保障。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="PHCB" title="進階高額實支實付" minUnit="計畫1" recommend="計畫5" color="border-blue-400" highlight="達文西手術、高階醫材剋星" ageLimit="0-65歲 | 至80歲">
-                                    <p>• 提供更高額度雜費，應對百萬級別的高科技治療支出。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="1HSD" title="超實踐幸福自負額附約" minUnit="計畫A" recommend="依額度補強" color="border-sky-300" highlight="拉高總雜費的秘密武器" ageLimit="0-65歲 | 至75歲">
-                                    <p>• 搭配 1HS 使用，用低保費擴大 20萬 以上的防護空間。</p>
-                                </ProductRowCard>
-                                <SectionTitle title="終身/定額醫療" />
-                                <ProductRowCard code="WEHS" title="實健溢百住院醫療終身" minUnit="計畫10" color="border-cyan-500" highlight="74歲後自動轉為實支實付" ageLimit="0-65歲 | 終身">
-                                    <p>• 解決高齡保險斷層，老後享有高額實支與雜費保障。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="HPHI2" title="溢心守護2醫療保險" minUnit="500元" recommend="1000元" color="border-sky-400" highlight="終身手術防護專屬帳戶" ageLimit="0-65歲 | 終身">
-                                    <p>• 涵蓋住院/門診手術表倍數理賠，老後醫療不求人。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="STCB" title="優樂康護短期照顧終身" minUnit="500元" recommend="1000元" color="border-teal-400" highlight="住院+術後休養補貼" ageLimit="0-60歲 | 終身">
-                                    <p>• 特色：提供「術後出院慰問金」，貼補營養品費或薪資缺口。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="TKI" title="溢起堅齒定期保險" minUnit="1單位" color="border-sky-300" highlight="牙齒專屬自費項目理賠" ageLimit="15-60歲 | 至75歲">
-                                    <p>• 針對植牙、假牙等高額自費項目提供定額補貼。</p>
-                                </ProductRowCard>
-                            </>
-                        )}
-
-                        {cat === 'cancer' && (
-                            <>
-                                <SectionTitle title="防癌一次金與定額" />
-                                <ProductRowCard code="HCAB2" title="滿溢久久2防癌主約" minUnit="1單位" recommend="1~2單位" color="border-rose-400" highlight="終身防癌大傘，含療程細項" ageLimit="0-60歲 | 終身">
-                                    <p>• 初次罹癌一次金 + 門診、放射、化療等各項完整定額給付。</p>
-                                </ProductRowCard>
-                                <SectionTitle title="尖端醫療附約 (高端防護)" />
-                                <ProductRowCard code="1CGT" title="癌症精準醫療附約" minUnit="1單位" recommend="1單位" color="border-pink-400" highlight="基因檢測與標靶補貼" ageLimit="0-70歲 | 至80歲">
-                                    <p>• 基因檢測 3萬 + 標靶藥物 10萬，讓治療精準到位。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="1CPT" title="質子重粒子治療附約" minUnit="1單位" color="border-rose-500" highlight="百萬級放療剋星" ageLimit="0-70歲 | 至80歲">
-                                    <p>• 單次療程定額補貼 30 萬，專門對付昂貴自費放療。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="1SCT" title="幹細胞與免疫治療附約" minUnit="1單位" color="border-red-500" highlight="百萬級 CAR-T 療法的後盾" ageLimit="0-70歲 | 至80歲">
-                                    <p>• 特定細胞免疫療法提供 100 萬高額一次金。</p>
-                                </ProductRowCard>
-                            </>
-                        )}
-
-                        {cat === 'critical' && (
-                            <>
-                                <SectionTitle title="重大傷病 (認卡即賠)" />
-                                <ProductRowCard code="TED" title="精選傷病定期保險" minUnit="10萬" recommend="100萬" color="border-orange-500" highlight="現行涵蓋廣達 41 項" ageLimit="0-60歲 | 至85歲">
-                                    <p>• 憑健保署「重大傷病證明」即理賠一次金，範圍最廣、最無爭議。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="1TED" title="遇見幸福精選傷病附約" minUnit="10萬" recommend="100萬" color="border-orange-400" highlight="低保費拉高一次金水位" ageLimit="0-70歲 | 至80歲">
-                                    <p>• 隨主約附加，針對 41 項特定傷病提供強力補強。</p>
-                                </ProductRowCard>
-                                <div className="bg-white p-6 rounded-2xl border-2 border-orange-200 mt-6 shadow-sm">
-                                    <h3 className="text-xl font-black text-orange-800 mb-4 flex items-center gap-2">
-                                        <Icon name="shield-alert" /> 特定傷病 41 項清單
-                                    </h3>
-                                    <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-2 text-sm font-bold text-gray-600">
-                                        {tedDiseases.map((d, i) => (
-                                            <li key={i} className="hover:text-orange-500 transition-colors">
-                                                {i + 1}. {d}
-                                            </li>
-                                        ))}
-                                    </ul>
+                        <div class="w-full lg:w-2/5 flex flex-col gap-4">
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-[#e6e2dd] flex flex-col items-center justify-center">
+                                <h3 class="font-black text-gray-800 mb-3 text-base">保險規劃金字塔</h3>
+                                <div class="w-full max-w-[200px] relative mt-2">
+                                    <svg viewBox="0 0 200 150" class="w-full h-auto drop-shadow-md">
+                                        <path d="M 0 150 L 200 150 L 166.6 100 L 33.3 100 Z" fill="#d4cfc9" stroke="#fff" stroke-width="2" class="hover:fill-[#c4bdaf] transition-colors" />
+                                        <text x="100" y="132" text-anchor="middle" font-size="14" font-weight="900" fill="#4a4036">1. 醫療保障 (打底)</text>
+                                        <path d="M 33.3 100 L 166.6 100 L 133.3 50 L 66.6 50 Z" fill="#e8e4db" stroke="#fff" stroke-width="2" class="hover:fill-[#d8d4cb] transition-colors" />
+                                        <text x="100" y="82" text-anchor="middle" font-size="14" font-weight="900" fill="#4a4036">2. 財務規劃 (增值)</text>
+                                        <path d="M 66.6 50 L 133.3 50 L 100 0 Z" fill="#f5f1ea" stroke="#fff" stroke-width="2" class="hover:fill-[#e5e1da] transition-colors" />
+                                        <text x="100" y="38" text-anchor="middle" font-size="14" font-weight="900" fill="#4a4036">3. 資產傳承 (守成)</text>
+                                    </svg>
                                 </div>
-                            </>
-                        )}
+                            </div>
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-[#e6e2dd] flex-grow flex flex-col items-center justify-center relative overflow-hidden">
+                                <div class="absolute -right-6 -top-6 w-24 h-24 bg-orange-50 rounded-full z-0"></div>
+                                <h3 class="font-black text-gray-800 mb-4 text-base z-10">標準家庭財務分配矩陣</h3>
+                                <div class="relative w-full max-w-[240px] aspect-square border-2 border-gray-300 grid grid-cols-2 grid-rows-2 text-center bg-white shadow-sm rounded-xl overflow-hidden z-10">
+                                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white border-2 border-gray-300 rounded-full flex items-center justify-center font-black text-gray-800 shadow-sm z-20 text-xs">收入</div>
+                                    <div class="border-r-2 border-b-2 border-gray-300 p-2 flex flex-col items-center justify-center bg-gray-50">
+                                        <h4 class="font-black text-gray-700 text-xs mb-1">日常支出 40%</h4>
+                                    </div>
+                                    <div class="border-b-2 border-gray-300 p-2 flex flex-col items-center justify-center bg-gray-50">
+                                        <h4 class="font-black text-gray-700 text-xs mb-1">投資理財 25%</h4>
+                                    </div>
+                                    <div class="border-r-2 border-gray-300 p-2 flex flex-col items-center justify-center bg-orange-50 relative border-l-4 border-l-orange-500">
+                                        <h4 class="font-black text-orange-700 text-sm mb-1 z-10">風險防護 10%</h4>
+                                    </div>
+                                    <div class="p-2 flex flex-col items-center justify-center bg-gray-50">
+                                        <h4 class="font-black text-gray-700 text-xs mb-1">貸款負債 25%</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                        {cat === 'ltc' && (
-                            <>
-                                <SectionTitle title="長期照顧/失能防護" />
-                                <ProductRowCard code="1LTC" title="照亮幸福長期照顧保險" minUnit="1萬" recommend="3萬/月" color="border-emerald-500" highlight="長照/壽險雙效合一" ageLimit="15-65歲 | 至75歲">
-                                    <p>• 符合長照狀態先領「一次金」，再按月領「照護扶助金」，維持尊嚴生活。</p>
-                                </ProductRowCard>
-                                <ProductRowCard code="HRLTC2" title="溢路相守2長期照顧" minUnit="1萬" recommend="3萬" color="border-green-400" highlight="繳費有期，保障終身(至99歲)" ageLimit="0-65歲 | 至99歲">
-                                    <p>• 提供終身防護，老後風險的最佳守護者。</p>
-                                </ProductRowCard>
-                            </>
-                        )}
+                    <div class="w-full bg-white p-5 rounded-2xl shadow-sm border border-[#e6e2dd]">
+                        <h3 class="font-black text-gray-800 mb-4 text-lg border-l-4 border-orange-500 pl-3">人生八大需求盤點</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-sky-50 p-3 rounded-xl border border-sky-100 flex flex-col items-center text-center hover:bg-sky-100 transition-colors">
+                                <i data-lucide="heart-pulse" class="w-6 h-6 text-sky-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">醫療費用</span>
+                                <span class="text-[11px] text-gray-500 mt-1">健保缺口 / 自費醫材</span>
+                            </div>
+                            <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex flex-col items-center text-center hover:bg-emerald-100 transition-colors">
+                                <i data-lucide="user-round" class="w-6 h-6 text-emerald-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">長期照護</span>
+                                <span class="text-[11px] text-gray-500 mt-1">失能扶助 / 看護費用</span>
+                            </div>
+                            <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 flex flex-col items-center text-center hover:bg-amber-100 transition-colors">
+                                <i data-lucide="utensils" class="w-6 h-6 text-amber-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">生活費用</span>
+                                <span class="text-[11px] text-gray-500 mt-1">撫養期日常開銷</span>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex flex-col items-center text-center hover:bg-blue-100 transition-colors">
+                                <i data-lucide="book-open" class="w-6 h-6 text-blue-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">子女教育</span>
+                                <span class="text-[11px] text-gray-500 mt-1">學雜費 / 出國留學金</span>
+                            </div>
+                            <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 flex flex-col items-center text-center hover:bg-indigo-100 transition-colors">
+                                <i data-lucide="home" class="w-6 h-6 text-indigo-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">房屋貸款</span>
+                                <span class="text-[11px] text-gray-500 mt-1">房貸 / 車貸 / 債務</span>
+                            </div>
+                            <div class="bg-orange-50 p-3 rounded-xl border border-orange-100 flex flex-col items-center text-center hover:bg-orange-100 transition-colors">
+                                <i data-lucide="users" class="w-6 h-6 text-orange-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">父母孝親</span>
+                                <span class="text-[11px] text-gray-500 mt-1">奉養金 / 醫療準備</span>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded-xl border border-purple-100 flex flex-col items-center text-center hover:bg-purple-100 transition-colors">
+                                <i data-lucide="piggy-bank" class="w-6 h-6 text-purple-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">退休養老</span>
+                                <span class="text-[11px] text-gray-500 mt-1">樂活退休金 / 抗通膨</span>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-col items-center text-center hover:bg-gray-100 transition-colors">
+                                <i data-lucide="wallet" class="w-6 h-6 text-gray-600 mb-2"></i>
+                                <span class="font-bold text-gray-800 text-sm">最終責任</span>
+                                <span class="text-[11px] text-gray-500 mt-1">喪葬 / 稅務 / 資產傳承</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            );
-        };
-
-        const SlideContact = () => (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6 bg-gradient-to-br from-[#4a4036] to-[#2c2620] text-[#e8e4db] animate-fade-in relative overflow-hidden">
-                <div className="w-full max-w-md bg-white/10 backdrop-blur-md p-12 rounded-[3rem] border border-white/20 shadow-2xl relative transform hover:scale-105 transition-transform duration-500">
-                    <h2 className="text-3xl font-black mb-10 text-white border-b-2 border-white/20 pb-4 inline-block tracking-widest">您的保險規劃顧問</h2>
-                    <div className="flex flex-col items-center mb-10">
-                        <div className="w-28 h-28 bg-gradient-to-tr from-[#a39171] to-[#d4cfc9] rounded-full flex items-center justify-center shadow-2xl text-white mb-6 border-4 border-white/20">
-                            <Icon name="user" className="w-14 h-14" />
-                        </div>
-                        <h2 className="text-5xl font-black text-white tracking-widest">趙于翔</h2>
-                    </div>
-                    <div className="space-y-4 text-xl w-full">
-                        <div className="flex items-center justify-center gap-4 bg-black/20 py-4 rounded-2xl hover:bg-white/20 transition-all cursor-pointer border border-transparent hover:border-white/30">
-                            <Icon name="phone" className="w-7 h-7 text-[#d4cfc9]" />
-                            <span className="font-black text-white">0968-771572</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-4 bg-black/20 py-4 rounded-2xl hover:bg-white/20 transition-all cursor-pointer border border-transparent hover:border-white/30">
-                            <Icon name="message-circle" className="w-7 h-7 text-[#d4cfc9]" />
-                            <span className="font-black text-white">Line ID: 520b0130</span>
-                        </div>
-                    </div>
-                </div>
-                <p className="absolute bottom-8 text-white/40 text-sm tracking-widest font-black">預見風險 • 穩健築夢</p>
             </div>
-        );
-
-        // --- 主程式架構 ---
-        const App = () => {
-            const [currentSlide, setCurrentSlide] = useState(0);
-            const slides = [SlideHome, SlideConcept, SlideCore, SlideCheckup, SlideProducts, SlideContact];
-            const CurrentPage = slides[currentSlide];
-
-            return (
-                <div className="flex flex-col h-screen w-full font-sans bg-gray-100 overflow-hidden text-gray-800">
-                    <div className="flex-grow relative overflow-hidden">
-                        <CurrentPage />
-                    </div>
-                    
-                    <div className="bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between shrink-0 shadow-lg z-50">
-                        <button
-                            onClick={() => setCurrentSlide(p => Math.max(0, p - 1))}
-                            disabled={currentSlide === 0}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black transition-all ${currentSlide === 0 ? 'text-gray-300' : 'text-[#4a4036] hover:bg-gray-100 border border-gray-200'}`}
-                        >
-                            <Icon name="chevron-left" /> 上一頁
-                        </button>
-                        
-                        <div className="flex gap-3">
-                            {slides.map((_, idx) => (
-                                <div
-                                    key={idx}
-                                    onClick={() => setCurrentSlide(idx)}
-                                    className={`h-3 rounded-full cursor-pointer transition-all duration-300 ${currentSlide === idx ? 'w-12 bg-[#8c7a6b] shadow-md' : 'w-3 bg-gray-300 hover:bg-gray-400'}`}
-                                />
-                            ))}
+            `,
+            // Slide 2: 六大核心
+            `
+            <div class="flex flex-col h-full px-6 md:px-12 py-8 bg-[#f5f1ea] animate-fade-in overflow-y-auto">
+                <h2 class="text-3xl font-black text-[#4a4036] mb-8 text-center shrink-0 tracking-wide">全方位醫療保障：六大核心基石</h2>
+                <div class="flex-grow flex flex-col lg:flex-row items-center justify-center gap-12 py-4">
+                    <div class="relative w-[340px] h-[340px] shrink-0 mx-auto lg:mx-0">
+                        <div class="absolute top-[0px] left-[110px] w-[120px] h-[120px] bg-gradient-to-br from-[#8c7a6b] to-[#6b5f54] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-50 transform hover:scale-110 transition-transform">
+                            <span class="text-2xl font-black">壽險</span><span class="text-[10px] opacity-80">家庭責任/留愛</span>
                         </div>
-
-                        <button
-                            onClick={() => setCurrentSlide(p => Math.min(slides.length - 1, p + 1))}
-                            disabled={currentSlide === slides.length - 1}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black transition-all ${currentSlide === slides.length - 1 ? 'text-gray-300' : 'text-[#4a4036] hover:bg-gray-100 border border-gray-200'}`}
-                        >
-                            下一頁 <Icon name="chevron-right" />
-                        </button>
+                        <div class="absolute top-[80px] left-[10px] w-[120px] h-[120px] bg-gradient-to-br from-[#a39171] to-[#8c7a6b] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-40 transform hover:scale-110 transition-transform">
+                            <span class="text-2xl font-black">意外</span><span class="text-[10px] opacity-80">外來突發防護</span>
+                        </div>
+                        <div class="absolute top-[80px] left-[210px] w-[120px] h-[120px] bg-gradient-to-br from-[#a39171] to-[#8c7a6b] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-40 transform hover:scale-110 transition-transform">
+                            <span class="text-2xl font-black">住院</span><span class="text-[10px] opacity-80">病房費/雜費</span>
+                        </div>
+                        <div class="absolute top-[180px] left-[50px] w-[120px] h-[120px] bg-gradient-to-br from-[#bdaaa4] to-[#a39171] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-30 transform hover:scale-110 transition-transform">
+                            <span class="text-2xl font-black">防癌</span><span class="text-[10px] opacity-80">一次金/標靶</span>
+                        </div>
+                        <div class="absolute top-[180px] left-[170px] w-[120px] h-[120px] bg-gradient-to-br from-[#bdaaa4] to-[#a39171] rounded-full flex flex-col items-center justify-center shadow-lg text-white font-bold border-4 border-[#f5f1ea] z-30 transform hover:scale-110 transition-transform">
+                            <span class="text-2xl font-black">手術</span><span class="text-[10px] opacity-80">門診/達文西</span>
+                        </div>
+                        <div class="absolute top-[280px] left-[170px] transform -translate-x-1/2 w-full text-center z-50">
+                            <div class="inline-block bg-orange-600 text-white px-8 py-3 rounded-full shadow-xl border-4 border-[#f5f1ea] transform hover:scale-105 transition-transform">
+                                <span class="text-3xl font-black tracking-widest">長照與失能</span>
+                                <p class="text-xs font-bold mt-1 opacity-90">未來最核心的現金流缺口</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-full lg:w-1/2 max-w-lg flex flex-col gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-md relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 font-bold text-xs rounded-bl-lg shadow-sm flex items-center gap-1 z-10">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i> 必懂知識
+                            </div>
+                            <h3 class="text-xl font-black text-gray-900 mb-4 border-b-2 border-red-100 pb-2 mt-2">傳統七大重大疾病 (確診一次金)</h3>
+                            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-2 text-gray-700 font-bold text-sm">
+                                <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>1. 腦中風後障礙 (重度)</li>
+                                <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>2. 急性心肌梗塞 (重度)</li>
+                                <li class="flex items-center gap-2 sm:col-span-2 bg-red-50 p-2 rounded-md"><div class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>3. 冠狀動脈繞道手術</li>
+                                <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>4. 末期腎病變 (洗腎)</li>
+                                <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>5. 癌症 (重度)</li>
+                                <li class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>6. 癱瘓 (重度)</li>
+                                <li class="flex items-center gap-2 sm:col-span-2"><div class="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>7. 重大器官或造血幹細胞移植</li>
+                            </ul>
+                            <p class="mt-3 text-xs text-red-600 font-bold">*重大傷病險(TED)範圍更廣，涵蓋41項，理賠認定以健保署核發之證明為準，更為明確。</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-yellow-100 to-amber-50 p-6 rounded-xl shadow-lg border border-yellow-300 w-full relative">
+                            <div class="absolute -left-3 top-6 bottom-6 w-1 bg-yellow-400 rounded-full"></div>
+                            <p class="font-black text-xl text-gray-900 mb-3">風險轉嫁的正確順序：</p>
+                            <p class="text-gray-700 font-bold text-base mb-2">1. <span class="text-blue-700">先保大，再保小</span> (先轉嫁無法承受的百萬重疾/長照)</p>
+                            <p class="text-gray-700 font-bold text-base mb-2">2. <span class="text-blue-700">先保近，再保遠</span> (先求當下額度足夠，再考慮終身保障)</p>
+                            <p class="text-gray-700 font-bold text-base">3. <span class="text-blue-700">先保家長，再保小孩</span> (經濟支柱是家庭最大的護城河)</p>
+                            <div class="mt-5 pt-4 border-t-2 border-yellow-200/50">
+                                <p class="font-black text-lg text-orange-700 flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-5 h-5"></i> 醫療保障齊全後，即可安心衝刺資產規劃！
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            );
+            </div>
+            `,
+            // Slide 3: 保單健診
+            `
+            <div class="flex flex-col h-full px-6 md:px-12 py-8 bg-[#fdfbf7] animate-fade-in overflow-y-auto">
+                <div class="flex items-center justify-between shrink-0 mb-6 border-b-2 border-[#8c7a6b] pb-4">
+                    <div>
+                        <h2 class="text-3xl font-black text-[#4a4036] flex items-center gap-3">
+                            現有保單健診與缺口分析 <i data-lucide="edit-3" class="w-7 h-7 text-[#8c7a6b]"></i>
+                        </h2>
+                        <p class="text-[#8c7a6b] mt-2 font-bold">精準盤點既有資源，讓每一分保費花在刀口上 (欄位可直接輸入)</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 flex-grow flex flex-col overflow-hidden">
+                    <div class="overflow-x-auto w-full flex-grow">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-700 border-b-2 border-gray-200">
+                                    <th class="py-4 px-6 font-black text-lg w-[30%]">風險類別</th>
+                                    <th class="py-4 px-6 font-black text-lg w-[35%]">原保障內容與額度盤點</th>
+                                    <th class="py-4 px-6 font-black text-lg w-[35%]">專業顧問缺口分析與建議</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-6 px-6 align-top"><div class="flex items-start gap-3"><div class="p-3 rounded-xl shadow-sm border border-gray-100 shrink-0 bg-indigo-50 text-indigo-600"><i data-lucide="shield" class="w-6 h-6"></i></div><span class="font-black text-gray-800 text-lg leading-snug pt-1">壽險 (家庭責任/債務留存/傳承)</span></div></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="請輸入客戶現有額度..." class="w-full h-24 resize-none bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-blue-500 focus:bg-white text-base text-gray-700"></textarea></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="例如：房貸1000萬，目前壽險缺口..." class="w-full h-24 resize-none bg-orange-50/50 border border-orange-200 rounded-lg p-3 outline-none focus:border-orange-500 focus:bg-white text-base text-orange-800 font-medium"></textarea></td>
+                                </tr>
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-6 px-6 align-top"><div class="flex items-start gap-3"><div class="p-3 rounded-xl shadow-sm border border-gray-100 shrink-0 bg-amber-50 text-amber-500"><i data-lucide="activity" class="w-6 h-6"></i></div><span class="font-black text-gray-800 text-lg leading-snug pt-1">意外險 (死殘/實支/骨折/薪資補償)</span></div></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="請輸入客戶現有額度..." class="w-full h-24 resize-none bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-blue-500 focus:bg-white text-base text-gray-700"></textarea></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="例如：意外實支額度是否足夠應付自費醫材..." class="w-full h-24 resize-none bg-orange-50/50 border border-orange-200 rounded-lg p-3 outline-none focus:border-orange-500 focus:bg-white text-base text-orange-800 font-medium"></textarea></td>
+                                </tr>
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-6 px-6 align-top"><div class="flex items-start gap-3"><div class="p-3 rounded-xl shadow-sm border border-gray-100 shrink-0 bg-sky-50 text-sky-500"><i data-lucide="stethoscope" class="w-6 h-6"></i></div><span class="font-black text-gray-800 text-lg leading-snug pt-1">醫療險 (病房差額/手術/高額雜費)</span></div></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="請輸入客戶現有額度..." class="w-full h-24 resize-none bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-blue-500 focus:bg-white text-base text-gray-700"></textarea></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="例如：是否有高額實支實付轉嫁達文西手術..." class="w-full h-24 resize-none bg-orange-50/50 border border-orange-200 rounded-lg p-3 outline-none focus:border-orange-500 focus:bg-white text-base text-orange-800 font-medium"></textarea></td>
+                                </tr>
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-6 px-6 align-top"><div class="flex items-start gap-3"><div class="p-3 rounded-xl shadow-sm border border-gray-100 shrink-0 bg-rose-50 text-rose-500"><i data-lucide="heart-pulse" class="w-6 h-6"></i></div><span class="font-black text-gray-800 text-lg leading-snug pt-1">防癌與重疾 (標靶藥物/確診一次金)</span></div></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="請輸入客戶現有額度..." class="w-full h-24 resize-none bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-blue-500 focus:bg-white text-base text-gray-700"></textarea></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="例如：罹癌一次金是否達100萬以上..." class="w-full h-24 resize-none bg-orange-50/50 border border-orange-200 rounded-lg p-3 outline-none focus:border-orange-500 focus:bg-white text-base text-orange-800 font-medium"></textarea></td>
+                                </tr>
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="py-6 px-6 align-top"><div class="flex items-start gap-3"><div class="p-3 rounded-xl shadow-sm border border-gray-100 shrink-0 bg-emerald-50 text-emerald-600"><i data-lucide="user-round" class="w-6 h-6"></i></div><span class="font-black text-gray-800 text-lg leading-snug pt-1">長照與失能 (外籍看護/收入中斷)</span></div></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="請輸入客戶現有額度..." class="w-full h-24 resize-none bg-gray-50 border border-gray-200 rounded-lg p-3 outline-none focus:border-blue-500 focus:bg-white text-base text-gray-700"></textarea></td>
+                                    <td class="py-6 px-6 align-top"><textarea placeholder="例如：每月長照扶助金是否達3-5萬..." class="w-full h-24 resize-none bg-orange-50/50 border border-orange-200 rounded-lg p-3 outline-none focus:border-orange-500 focus:bg-white text-base text-orange-800 font-medium"></textarea></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            `,
+            // Slide 4: 商品互動白板 (容器)
+            `
+            <div class="flex flex-col h-full bg-[#f4f1ea] animate-fade-in relative">
+                <!-- 標籤列 -->
+                <div class="bg-white px-6 pt-4 flex gap-2 overflow-x-auto shrink-0 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] z-10 border-b border-gray-200" id="product-tabs-container">
+                    <!-- Tabs rendered via JS -->
+                </div>
+                <!-- 內容區 -->
+                <div class="flex-grow p-6 md:px-12 overflow-y-auto pb-24 scroll-smooth" id="product-content-container">
+                    <!-- Products rendered via JS -->
+                </div>
+            </div>
+            `,
+            // Slide 5: 聯絡資訊
+            `
+            <div class="flex flex-col items-center justify-center h-full text-center px-6 bg-gradient-to-br from-[#4a4036] to-[#2c2620] text-[#e8e4db] animate-fade-in relative overflow-hidden">
+                <div class="w-full max-w-md bg-white/10 backdrop-blur-md p-12 rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden transform hover:scale-105 transition-transform duration-500">
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none blur-2xl"></div>
+                    <div class="absolute bottom-0 left-0 w-32 h-32 bg-[#a39171]/30 rounded-full transform -translate-x-1/2 translate-y-1/2 pointer-events-none blur-xl"></div>
+                    <h1 class="text-3xl font-black tracking-widest mb-10 text-white border-b-2 border-white/30 pb-4 inline-block">專屬您的保險顧問</h1>
+                    <div class="flex flex-col items-center mb-10 z-10 relative">
+                        <div class="w-28 h-28 bg-gradient-to-tr from-[#a39171] to-[#d4cfc9] rounded-full flex items-center justify-center shadow-2xl text-white mb-6 border-4 border-white/20">
+                            <i data-lucide="user" class="w-14 h-14 drop-shadow-md"></i>
+                        </div>
+                        <h2 class="text-5xl font-black text-white tracking-widest drop-shadow-lg">趙于翔</h2>
+                    </div>
+                    <div class="space-y-4 text-xl w-full z-10 relative">
+                        <div class="flex items-center justify-center gap-4 bg-black/20 py-4 rounded-xl hover:bg-white/20 transition-all cursor-pointer w-full border border-transparent hover:border-white/30 shadow-inner">
+                            <i data-lucide="phone" class="w-7 h-7 text-[#d4cfc9]"></i>
+                            <span class="tracking-wider font-bold text-white">0968-771572</span>
+                        </div>
+                        <div class="flex items-center justify-center gap-4 bg-black/20 py-4 rounded-xl hover:bg-white/20 transition-all cursor-pointer w-full border border-transparent hover:border-white/30 shadow-inner">
+                            <i data-lucide="message-circle" class="w-7 h-7 text-[#d4cfc9]"></i>
+                            <span class="tracking-wider font-bold text-white">Line ID: 520b0130</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="absolute bottom-8 text-white/40 text-sm tracking-widest font-bold">預見風險 • 穩健築夢</p>
+            </div>
+            `
+        ];
+
+        // ==========================================
+        // 嚴謹校驗後之商品資料庫 (JavaScript Object)
+        // ==========================================
+        const productsData = {
+            life: [
+                { type: "section", title: "主約 (Main Contract)", subtitle: "建構醫療附約的地基或資產傳承的核心" },
+                { code: "20NNPL", title: "新康順終身保險", minUnit: "10萬", recommend: "30萬", color: "border-indigo-400", highlight: "最平價的終身醫療附約底座", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保障終身", features: ["提供基礎終身壽險防護：<span class='text-indigo-700 font-black'>10萬元起</span>。","涵蓋身故及完全失能理賠。","常做為主約出單，下方可掛載全系列醫療/意外附約。"] },
+                { code: "AYWTPL", title: "佳倍享福利變型終身保險", minUnit: "10萬", recommend: "100萬~500萬", color: "border-indigo-500", highlight: "資產傳承、抗通膨利器", interest: true, ageLimit: "投保年齡: 0-74歲 | 續保年齡: 保障至110歲", features: ["終身壽險保障，提供高額身故金預留稅源。","<strong class='text-indigo-800'>宣告利率機制：</strong>有機會獲取增額回饋分享金，抵禦通膨侵蝕。"] },
+                { code: "AITPL", title: "增享福終身壽險", minUnit: "10萬", recommend: "100萬", color: "border-indigo-400", highlight: "長期穩健資產累積", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保障終身", features: ["提供終身身故與完全失能保障。","適合長期資金穩健累積與傳承分配。"] },
+                { code: "ARTER", title: "大樂選利變還本定期保險", minUnit: "10萬", recommend: "100萬", color: "border-blue-400", highlight: "創造穩定現金流", interest: true, ageLimit: "投保年齡: 0-74歲 | 續保年齡: 依約定年期", features: ["繳費年期靈活 (2/6/10/15年)。","定期生存還本，結合宣告利率，適合退休規劃或教育金準備。"] },
+                { code: "6AFTE3", title: "威力年年3還本定期保險", minUnit: "10萬", recommend: "50萬", color: "border-blue-400", highlight: "穩健還本現金流", ageLimit: "投保年齡: 0-74歲 | 續保年齡: 依約定年期", features: ["短中期繳費，創造定期還本給付。","適合教育基金或短期財務目標規劃。"] },
+                { code: "NTL2", title: "新定期壽險", minUnit: "50萬", recommend: "300萬~500萬", color: "border-indigo-300", highlight: "低保費、高保障的房貸守護神", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 依約定年期", features: ["階段性高額身故保障：<span class='text-red-600 font-black'>50萬元起</span>。","純保障不還本，保費極具優勢，精準轉嫁撫養期或房貸重擔。"] },
+                { code: "STL6", title: "享添鑽利變型定期保險", minUnit: "50萬", recommend: "100萬", color: "border-indigo-300", highlight: "高保障附加宣告利率", interest: true, ageLimit: "投保年齡: 0-60歲 | 續保年齡: 依約定年期", features: ["結合定期身故防護與宣告利率機制。","給付身故及完全失能保險金。"] },
+                { code: "MPL3", title: "新福愛小額終身壽險", minUnit: "10萬", recommend: "30萬(最高90萬)", color: "border-purple-400", highlight: "政府政策型、免體檢門檻低", ageLimit: "投保年齡: 0-84歲 | 續保年齡: 保障終身", features: ["保費較傳統終身壽險便宜，高齡者亦可輕鬆投保。","建構基本人生尊嚴與喪葬費用準備的最優解。"] },
+                { code: "3ATE", title: "金佳多利變還本終身壽險", minUnit: "10萬", recommend: "100萬", color: "border-blue-500", highlight: "穩健增值、定期還本", interest: true, ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保障終身", features: ["利變型還本終身壽險，具生存保險金給付。","適合中長期資金停泊與建立退休現金流。"] },
+                { code: "6ATL", title: "珍利發利變增額終身壽險", minUnit: "10萬", recommend: "100萬", color: "border-blue-500", highlight: "資產增額、傳承配置", interest: true, ageLimit: "投保年齡: 0-74歲 | 續保年齡: 保障終身", features: ["利變型增額終身壽險，著重於保額遞增。","適合資產傳承及抵禦長期通膨風險。"] },
+                { type: "section", title: "附約 (Rider)", subtitle: "附加於主約之上，低成本拉高階段性保障" },
+                { code: "NTR2", title: "新定期壽險附約", minUnit: "50萬", recommend: "100萬~300萬", color: "border-gray-400", highlight: "靈活調控保障額度", ageLimit: "投保年齡: 15-65歲 | 續保年齡: 最高續保至75歲", features: ["靈活附加於既有主約，在家庭責任最重時期彈性調高身故防線。"] },
+                { code: "N1TR", title: "一年期壽險附約", minUnit: "50萬", recommend: "100萬~500萬", color: "border-gray-400", highlight: "短期衝刺最高CP值", ageLimit: "投保年齡: 15-65歲 | 續保年齡: 最高續保至75歲", features: ["一年一約，自然費率。用最低的預算，換取當下最高的身故保障。"] }
+            ],
+            accident: [
+                { type: "section", title: "主約 (Main Contract) & 專案組合", subtitle: "獨立出單，針對特定族群或情境的完整防護" },
+                { code: "SPA", title: "青春動起來保險", minUnit: "100萬", recommend: "200萬", color: "border-amber-400", highlight: "熱血青年的專屬護身符", ageLimit: "投保年齡: 15-65歲 | 續保年齡: 保障至85歲", features: ["意外身故保險金：<span class='text-amber-700 font-black'>100萬起</span>。","1-11級意外失能按表理賠。","特別針對騎車、登山等活動提供堅實防護。"] },
+                { code: "HWPA2", title: "溢帆風順2保險", minUnit: "50萬", recommend: "100萬", color: "border-amber-500", highlight: "大眾運輸加倍給付", ageLimit: "投保年齡: 15-60歲 | 續保年齡: 保障至85歲", features: ["提供特定意外(大眾運輸)加倍理賠。","針對失能提供生活扶助金。"] },
+                { code: "SBB", title: "意外骨折及特定手術主約", minUnit: "10萬", recommend: "30萬", color: "border-orange-400", highlight: "機車族必備的骨折神單", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障至80歲", features: ["針對最常見的意外骨折提供高額防護。","依骨折程度(完全/不完全/龜裂)與部位按比例理賠定額現金。"] },
+                { code: "KPA", title: "童心守護傷害保險", minUnit: "100萬", recommend: "200萬", color: "border-yellow-400", highlight: "兒童專屬意外主約", ageLimit: "投保年齡: 0-15歲 | 續保年齡: 依專案約定", features: ["為孩童量身打造的專屬意外防護。","意外醫療與失能給付完善。"] },
+                { code: "WOTA", title: "海外暢遊保險", minUnit: "100萬", recommend: "500萬", color: "border-yellow-500", highlight: "出國必備的海外守護神", ageLimit: "投保年齡: 0-85歲 | 續保年齡: 短天期專案", features: ["海外旅遊專屬，含高額突發疾病醫療。","提供極為關鍵的海外急難救援服務(如專機運送)。"] },
+                { code: "STA", title: "安心旅行平安保險", minUnit: "專案", recommend: "依天數規劃", color: "border-yellow-400", highlight: "國內外旅平險主約", ageLimit: "投保年齡: 0-85歲 | 續保年齡: 短天期", features: ["國內外旅行平安防護與基礎醫療。"] },
+                { code: "AOTA", title: "安心陪童享HIGH海外旅平險", minUnit: "專案", recommend: "依天數規劃", color: "border-yellow-300", highlight: "陪同幼童海外專屬主約", ageLimit: "投保年齡: 依條款 | 續保年齡: 短天期", features: ["專為海外旅遊與陪同幼童設計之防護主約。"] },
+                { code: "MPA", title: "微型傷害保險", minUnit: "10萬", recommend: "30萬-50萬", color: "border-gray-300", highlight: "銅板價的基礎社會防護網", ageLimit: "投保年齡: 15-75歲 | 續保年齡: 最高續保至75歲", features: ["個人投保之微型保險，針對經濟弱勢族群設計，保費極低。","提供最基礎的意外身故與失能防護。"] },
+                { code: "MPA2", title: "團體微型傷害保險", minUnit: "10萬", recommend: "30萬-50萬", color: "border-gray-300", highlight: "團體微型防護網", ageLimit: "投保年齡: 15-75歲 | 續保年齡: 最高續保至75歲", features: ["針對符合條件的團體承保之微型傷害險。","以極低門檻轉嫁意外死殘基本風險。"] },
+                { type: "section", title: "附約 (Rider)", subtitle: "附加於主約之上，建構全方位意外醫療網" },
+                { code: "YPAR", title: "青年意外專案附約", minUnit: "100萬計畫", recommend: "100萬計畫", color: "border-amber-300", highlight: "高CP值青年專屬套裝", ageLimit: "投保年齡: 15-30歲 | 續保年齡: 保障至30歲", features: ["意外身故：<span class='text-blue-700 font-black'>100萬元</span>。","專為青年族群設計之附加防護套裝，省去拆分挑選的麻煩。"] },
+                { code: "KPAR", title: "兒童意外專案附約", minUnit: "100萬計畫", recommend: "100萬計畫", color: "border-yellow-300", highlight: "符合法規限制童專案", ageLimit: "投保年齡: 0-15歲 | 續保年齡: 保障至15歲", features: ["意外失能防護：依1-11級比例給付。","符合法規喪葬費用限制之兒童專屬意外附加組合。"] },
+                { code: "AKMS", title: "海外旅行傷害醫療保險附約", minUnit: "專案", recommend: "依天數規劃", color: "border-yellow-300", highlight: "海外突發醫療", ageLimit: "投保年齡: 依條款 | 續保年齡: 短天期", features: ["附加於海外旅平險之上，轉嫁海外高昂醫療與突發疾病費用。"] },
+                { code: "NAI", title: "新傷害保險附約(不能工作)", minUnit: "20萬", recommend: "100萬", color: "border-amber-500", highlight: "業界罕見的『薪水保險』", ageLimit: "投保年齡: 15-64歲 | 續保年齡: 最高續保至65歲", features: ["因意外導致不能工作，提供**每週**薪資補貼：","完全不能工作：給付保額 <span class='text-red-600 font-black'>7.5‰ / 週</span>","部分不能工作：給付保額 <span class='text-blue-700 font-black'>1.25‰ / 週</span>","<div class='text-[12px] text-gray-600 mt-2 font-bold bg-amber-50 p-2 rounded inline-block'>*以100萬為例：完全不能工作每週領7,500元，休養期最強後盾！</div>"] },
+                { code: "PAMR", title: "實支實付傷害醫療附約", minUnit: "3萬", recommend: "5萬~10萬", color: "border-yellow-400", highlight: "對抗自費醫材的第一道防線", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 最高續保至75歲", features: ["意外醫療收據實支實付：限額 <span class='text-amber-700 font-black'>3萬元起</span>。","健保不給付之急診掛號費、高階敷料、人工骨板的最佳防線。"] },
+                { code: "BBMR", title: "傷害醫療保險附約(無社會保險)", minUnit: "3萬", recommend: "5萬~10萬", color: "border-amber-400", highlight: "意外實支經典附約", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 最高續保至75歲", features: ["針對非社會保險身分就醫時的實支實付傷害醫療。","補強一般意外醫療的雜費缺口。"] },
+                { code: "BBI", title: "傷害醫療日額附加條款", minUnit: "500元", recommend: "1000元", color: "border-amber-300", highlight: "沒住院也能賠骨折天數", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 最高續保至75歲", features: ["意外住院日額：<span class='text-amber-700 font-black'>1,000元/天</span> (以1000型為例)。","<strong class='text-red-600'>超強優勢：</strong>含「骨折未住院津貼」，在家休養也能依表定日數折算理賠！"] },
+                { code: "DHI", title: "意外住院日額附約", minUnit: "500元", recommend: "1000元", color: "border-amber-300", highlight: "意外住院專屬補貼", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 最高續保至75歲", features: ["單純針對意外事故導致的住院給予日額補貼。","同樣涵蓋骨折未住院折算天數理賠。"] },
+                { code: "SIPA", title: "傷害保險附約", minUnit: "10萬", recommend: "100萬", color: "border-orange-300", highlight: "拉高死殘保額的基本盤", ageLimit: "投保年齡: 15-65歲 | 續保年齡: 最高續保至75歲", features: ["意外身故保險金：10萬元起。","1-11級失能按表比例給付一次金，減輕失能後的家庭負擔。"] },
+                { code: "SBBR", title: "意外骨折及特定手術附約", minUnit: "3萬", recommend: "10萬", color: "border-amber-400", highlight: "小保費換大骨折防護", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 最高續保至75歲", features: ["意外骨折最高給付：<span class='text-amber-700 font-black'>3萬元起</span>。","搭配 BBI 與 PAMR，建構無懈可擊的「意外醫療鐵三角」。"] },
+                { code: "KMR", title: "陪童旅行傷害醫療附約", minUnit: "專案", recommend: "依天數規劃", color: "border-yellow-300", highlight: "旅平險專屬附加", ageLimit: "投保年齡: 依條款 | 續保年齡: 短天期", features: ["附加於海外旅平險主約之上，加強同行幼童之傷害醫療。"] },
+                { type: "section", title: "早期停售商品 (意外險)", subtitle: "保留供舊保單健診比對參考" },
+                { code: "AI", title: "意外傷害保險附約(早期)", minUnit: "10萬", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期經典意外險", ageLimit: "投保年齡: 早期商品 | 續保年齡: 最高續保至75歲", features: ["早期常見之意外身故與失能防護。","包含大眾運輸意外事故加倍給付。"] }
+            ],
+            medical: [
+                { type: "section", title: "醫療實支實付 (核心中的核心)", subtitle: "轉嫁二代健保下「住院天數少、自費項目多」的最佳解" },
+                { code: "1HS", title: "實踐幸福住院醫療附約", minUnit: "計畫A", recommend: "計畫A或B", color: "border-sky-400", highlight: "住院雜費與日額『擇優給付』", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至74歲", features: ["病房費：<span class='text-sky-700 font-black'>3,000元/天</span> (以計畫A為例)","手術與醫療雜費：合併限額 <span class='text-red-600 font-black'>20萬元</span>","門診手術：限額 <span class='text-sky-700 font-black'>3萬元</span>","<div class='mt-2 bg-sky-50 p-2.5 rounded border border-sky-100 text-xs font-bold text-sky-800'>★ 特色亮點：若單純住院無高額雜費，可選用「日額擇優」給付 (計畫A為3,600元/天)，兩者取其高，理賠最有利！</div>"] },
+                { code: "PHCB", title: "進階高額實支實付", minUnit: "計畫1", recommend: "計畫5", color: "border-blue-400", highlight: "達文西手術、高階醫材剋星", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保證續保至80歲", features: ["提供更高的醫療雜費限額 (如20萬/次)。","專門應對現代高科技醫療 (如達文西微創、免疫療法) 動輒數十萬的龐大開銷。"] },
+                { code: "1HSD", title: "超實踐幸福自負額附約", minUnit: "計畫A", recommend: "補強用", color: "border-sky-300", highlight: "花小錢買超高額度", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保證續保至75歲", features: ["附加於既有實支之上，提供 <span class='text-red-600 font-black'>5~20萬以上</span> 的額外雜費空間。","啟動條件為「超過自負額」，因此保費非常便宜，是拉高總雜費額度的秘密武器。"] },
+                { code: "1HSCO", title: "實現幸福部分負擔附約 (B1型)", minUnit: "1計畫", recommend: "1計畫", color: "border-cyan-400", highlight: "完美銜接高齡實支實付缺口", ageLimit: "投保年齡: 50-75歲 | 續保年齡: 保證續保至85歲", features: ["<strong class='text-gray-800'>75歲前：</strong>住院日額 1000/天 + 住院慰問金 6000/次。","<strong class='text-gray-800'>76歲後：</strong>免體檢自動轉為實支實付(雜費限額 <span class='text-red-600 font-black'>24萬</span>)，自負額設計讓高齡保費極具優勢。"] },
+                { type: "section", title: "定額給付型主約 (Main Contract)", subtitle: "建構終身防護底座，提供確定性的定額理賠" },
+                { code: "WEHS", title: "實健溢百住院醫療終身", minUnit: "計畫10", recommend: "計畫10", color: "border-cyan-500", highlight: "74歲前定額，74歲後啟動高額實支", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["前段提供住院日額(1000元起)與手術定額補貼。","高齡階段(74歲後)自動轉型為實支實付(含雜費與門診手術)，完美銜接老後高昂自費風險。"] },
+                { code: "HPCHI2", title: "全新溢靠2醫療保險", minUnit: "1單位", recommend: "1單位", color: "border-blue-300", highlight: "終身手術 + 重疾七項的複合體", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["不僅涵蓋高階終身手術費用理賠。","更內建「重大疾病(七項)」確診保障，一張保單解決兩大擔憂。"] },
+                { code: "HYPHI", title: "保滿溢醫療終身保險", minUnit: "1,000元", recommend: "1,000元", color: "border-sky-500", highlight: "保本型醫療，保費有去有回", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障終身", features: ["住院一般病房 1,000元/日、住院手術 3,000元/次。","結合日額與手術雙拼防護，達99歲或身故退還總繳保費(須扣除已領理賠)。"] },
+                { code: "PCHI", title: "重疾/手術/住院複合終身", minUnit: "1單位", recommend: "1單位", color: "border-cyan-400", highlight: "醫療三大缺口全包", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["兼具『重大疾病』、『手術』、『住院』三大功能。","住院日額：1000元/天起。"] },
+                { code: "STCB", title: "優樂康護短期照顧終身", minUnit: "500元", recommend: "1000元", color: "border-teal-400", highlight: "住院+術後休養的完美結合", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障終身", features: ["住院日額 + 出院療養：共計 <span class='text-teal-700 font-black'>2000元/天</span> (以1000型為例)。","特色：提供「術後出院慰問金」定額理賠，實質補貼術後需購買營養品或請假休養的薪資損失。"] },
+                { code: "HPHI2", title: "溢心守護2醫療保險", minUnit: "500元", recommend: "1000元", color: "border-sky-400", highlight: "終身手術防護帳戶", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["住院/門診手術依表定倍數理賠。","提供終身手術與創傷縫合保障帳戶，老後不怕沒保險賠。"] },
+                { code: "SPHI", title: "手術防護終身保險", minUnit: "500元", recommend: "1000元", color: "border-cyan-400", highlight: "專為手術設計的終身防護網", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["明確針對門診與住院手術理賠，給付金額依保單手術表倍數計算。","建構不受限醫療體制改變的終身手術專戶。"] },
+                { code: "2OPHI", title: "還本型住院醫療終身保險", minUnit: "500元", recommend: "1000元", color: "border-blue-400", highlight: "純日額防護，老後資產保本", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障終身", features: ["單純針對住院日額(1000/天)與出院療養(500/天)給付。","具備身故退還保費機制(扣除已領理賠)，保費不白繳。"] },
+                { code: "NPHI", title: "新還本型住院醫療終身", minUnit: "500元", recommend: "1000元", color: "border-blue-500", highlight: "醫療日額防護與保本", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["住院日額與出院療養金給付。","於被保險人身故、完全失能或達祝壽年齡時，依約定計算退還保費餘額。"] },
+                { type: "section", title: "特定族群主約 (Main Contract)", subtitle: "針對婦幼、弱體、特定疾病的定製防護" },
+                { code: "TDH", title: "Hold助糖定期醫療保險", minUnit: "500元", recommend: "1000元", color: "border-teal-500", highlight: "糖尿病專屬弱體保單", ageLimit: "投保年齡: 30-60歲 | 續保年齡: 最高續保至74歲", features: ["糖尿病患者專屬醫療險，提供住院日額與手術防護，不用再擔心體況被拒保。"] },
+                { code: "HLD", title: "心心相惜生活習慣健康保險", minUnit: "500元", recommend: "1000元", color: "border-cyan-500", highlight: "三高等生活習慣病強化防護", ageLimit: "投保年齡: 20-60歲 | 續保年齡: 最高續保至80歲", features: ["針對高血壓、高血脂等引發之特定疾病，提供更強化的醫療理賠額度。"] },
+                { code: "TKI", title: "溢起堅齒定期保險", minUnit: "1單位", recommend: "1單位", color: "border-sky-300", highlight: "牙齒專屬定額理賠", ageLimit: "投保年齡: 15-60歲 | 續保年齡: 保證續保至75歲", features: ["針對牙冠、植牙、假牙等健保不給付的昂貴牙科項目，提供專屬的定額理賠。"] },
+                { code: "MOMMY CARE2", title: "媽咪寶2定期保險", minUnit: "1單位", recommend: "1單位", color: "border-pink-400", highlight: "婦嬰專屬雙重防護", ageLimit: "投保年齡: 15-45歲 | 續保年齡: 依條款定期限", features: ["專為懷孕媽咪設計，涵蓋孕期併發症理賠。","確保嬰兒出生後的先天性重大殘缺防護。"] },
+                { type: "section", title: "定額給付型附約 (Rider)", subtitle: "彌補薪資中斷與病房升等差額" },
+                { code: "TSIR3", title: "真獻情3手術醫療附約", minUnit: "500元", recommend: "1000元", color: "border-blue-300", highlight: "大小手術定額補貼", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保證續保至80歲", features: ["門診/住院手術皆可理賠。","依手術等級表倍率給付，作為實支實付之外的額外定額補貼。"] },
+                { code: "1SIR", title: "手握幸福手術醫療附約", minUnit: "500元", recommend: "1000元", color: "border-blue-400", highlight: "手術定額專屬附約", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保證續保至80歲", features: ["同樣提供門診與住院手術定額理賠。","依表定倍數，強化特定手術支出防禦。"] },
+                { code: "1NHI", title: "新日溢幸福住院日額", minUnit: "500元", recommend: "1000元", color: "border-cyan-300", highlight: "傳染病/加護病房加倍給付", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至85歲", features: ["單純天數補貼：<span class='text-cyan-700 font-black'>500元/天起</span>。","額外針對「法定傳染病」與加護病房加倍給付，提升重症時期的防護力。"] },
+                { code: "1HIR", title: "日臻幸福住院日額", minUnit: "500元", recommend: "1000元", color: "border-cyan-400", highlight: "基礎病房差額補強", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至85歲", features: ["提供住院日額單純天數補貼。","靈活附加拉高一般單人房/雙人房差額。"] },
+                { code: "1HR", title: "出院療養定期險附約", minUnit: "500元", recommend: "1000元", color: "border-sky-300", highlight: "補貼出院休養期的薪資損失", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至85歲", features: ["依實際住院天數給付「出院療養日額」(如500元/天起)。","彌補返家休養期間無法上班的隱形財務缺口。"] },
+                { code: "1HI", title: "定期住院醫療附約", minUnit: "500元", recommend: "1000元", color: "border-blue-200", highlight: "強化法定傳染病保障", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至85歲", features: ["一般住院定額補貼 (1000/天，以1000計畫為例)。","若因法定傳染病入住加護病房理賠大幅加倍，提升非常時期的經濟戰備力。"] },
+                { type: "section", title: "早期停售商品 (實支實付/日額)", subtitle: "保留供舊保單健診比對參考" },
+                { code: "HS", title: "醫療實支實付(早期)", minUnit: "計畫10", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期經典實支", ageLimit: "投保年齡: 早期商品 | 續保年齡: 最高續保到74歲", features: ["住院收據限額內實支實付(例如5萬)。","或住院日額1000元擇高給付。"] },
+                { code: "NHS", title: "醫療實支實付(甲型)", minUnit: "甲型", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期高額實支", ageLimit: "投保年齡: 早期商品 | 續保年齡: 最高續保到75歲", features: ["住院收據20萬額度實支實付。","或住院日額3000元擇高給付。"] },
+                { code: "HSDB", title: "自負額醫療實支(早期)", minUnit: "1份", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期自負額", ageLimit: "投保年齡: 早期商品 | 續保年齡: 最高續保到74歲", features: ["附加於既有實支之上，提供額外的雜費限額空間。"] },
+                { code: "HS補償", title: "醫療費用補償附約", minUnit: "5計畫", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期醫療補償", ageLimit: "投保年齡: 早期商品 | 續保年齡: 最高續保到65歲", features: ["住院收據1.5萬實支、手術1.5萬*百分比，或住院日額500元。"] },
+                { code: "HR", title: "出院療養附約(早期)", minUnit: "500元", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期療養金", ageLimit: "投保年齡: 早期商品 | 續保年齡: 可續保到74歲", features: ["出院療養日額單純給付。"] },
+                { code: "HIR", title: "定期住院日額(早期)", minUnit: "1000元", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期日額", ageLimit: "投保年齡: 早期商品 | 續保年齡: 可續保到69歲", features: ["單純住院日額補貼。"] }
+            ],
+            cancer: [
+                { type: "section", title: "防癌一次金與定額理賠", subtitle: "打底防癌基礎，應對初期的收入中斷與常規治療" },
+                { code: "HCAB2", title: "滿溢久久2防癌主約", minUnit: "1單位", recommend: "1~2單位", color: "border-rose-400", highlight: "終身防癌大傘，涵蓋療程細項", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障終身", features: ["<div class='font-bold text-gray-800 mb-2'>建構終身防護，涵蓋定額理賠細項：</div><div class='grid grid-cols-2 lg:grid-cols-3 gap-2 text-sm font-semibold text-gray-600 bg-rose-50/50 p-3 rounded-lg border border-rose-100'><span class='text-rose-600 flex items-center'><div class='w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5'></div>初次罹癌一次金</span><span class='flex items-center'><div class='w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5'></div>門診醫療</span><span class='flex items-center'><div class='w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5'></div>外科手術</span><span class='flex items-center'><div class='w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5'></div>放化學治療</span><span class='flex items-center'><div class='w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5'></div>住院日額</span><span class='flex items-center'><div class='w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5'></div>出院療養</span><span class='col-span-2 lg:col-span-3 flex items-center'><div class='w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5'></div>骨髓移植/義乳義肢重建</span></div>"] },
+                { code: "HCAR2", title: "滿溢久久2防癌附約", minUnit: "1單位", recommend: "1~2單位", color: "border-rose-300", highlight: "高CP值附加終身防癌", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障終身", features: ["條款與理賠細項同主約 HCAB2。","可附加於壽險主約之下，降低主約成本即可享有終身防癌保障。"] },
+                { code: "SC", title: "長青滿溢癌症定期保險", minUnit: "1單位", recommend: "1~2單位", color: "border-red-400", highlight: "高齡專屬癌症防護", ageLimit: "投保年齡: 50-75歲 | 續保年齡: 最高續保至85歲", features: ["銀髮族專屬，初次罹癌即給付一次金。","涵蓋癌症住院、手術、放化療等定額理賠，兼顧初期重金與療程防護。"] },
+                { code: "HC", title: "心滿溢足癌症保險", minUnit: "1單位", recommend: "1~2單位", color: "border-red-500", highlight: "基礎罹癌一次金與療程雙防護", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 最高續保至80歲", features: ["一般族群專用，初次罹癌即給付 <span class='text-red-600 font-black'>10萬元起</span> 一次金。","理賠細項完整，包含住院日額、門診與放化療，補強醫療實支實付缺口。"] },
+                { type: "section", title: "尖端醫療附約 (高端防護)", subtitle: "專門轉嫁新式療法、標靶藥物等動輒百萬的超高額自費" },
+                { code: "1CGT", title: "癌症精準醫療附約", minUnit: "1單位", recommend: "1單位", color: "border-pink-400", highlight: "精準用藥的導航儀", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至80歲", features: ["癌症基因檢測：最高補助 <span class='text-rose-700 font-black'>3萬元</span>，找出最有效的標靶藥物，不走冤枉路。","標靶藥物治療：補助 <span class='text-red-600 font-black'>10萬元起</span>。"] },
+                { code: "1CPT", title: "質子重粒子治療附約", minUnit: "1單位", recommend: "1單位", color: "border-rose-500", highlight: "無痛對抗實體腫瘤", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至80歲", features: ["質子/重粒子放射治療：定額給付 <span class='text-red-600 font-black'>30萬元</span>。","精準轉嫁單次動輒數十萬，且實支實付可能無法全額理賠的自費療程。"] },
+                { code: "1SCT", title: "幹細胞與免疫治療附約", minUnit: "1單位", recommend: "1單位", color: "border-red-500", highlight: "百萬級 CAR-T 療法的後盾", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至80歲", features: ["特定細胞免疫療法(如抗血癌的CAR-T)：給付 <span class='text-red-600 font-black'>100萬元</span>。","骨髓/造血幹細胞移植：<span class='text-rose-700 font-black'>50萬元</span>。"] },
+                { code: "1STT", title: "特定傷病標靶附約", minUnit: "1單位", recommend: "1單位", color: "border-pink-500", highlight: "年年給付，減輕長期吃藥負擔", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至80歲", features: ["特定傷病標靶藥物治療：每年給付 <span class='text-rose-700 font-black'>10萬元</span>。","針對需長期服用的昂貴標靶藥物提供持續性金流。"] },
+                { type: "section", title: "早期停售防癌商品", subtitle: "保留供舊保單健診比對參考" },
+                { code: "CAB", title: "護您久久終身防癌主約", minUnit: "1單位", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "經典不敗的終身防癌", ageLimit: "投保年齡: 早期商品 | 續保年齡: 保障終身", features: ["早期不需依附壽險的經典防癌主約。","涵蓋罹癌一次金、癌症住院日額、手術、放化療與出院療養等細項。"] }
+            ],
+            critical: [
+                { type: "section", title: "重大傷病 (健保連動，範圍最廣)", subtitle: "認卡即理賠，理賠最明確無爭議" },
+                { code: "TED", title: "精選傷病定期保險", minUnit: "10萬", recommend: "100萬", color: "border-orange-500", highlight: "現行涵蓋廣達 41 項", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障至85歲", features: ["理賠依據健保署重大傷病證明，<strong class='text-orange-700'>認卡即賠</strong>，範圍最廣泛。","依病況程度(輕度/重度)給付不同比例一次金，黃金治療期最強後盾。"] },
+                { code: "1TED", title: "遇見幸福精選傷病附約", minUnit: "10萬", recommend: "100萬", color: "border-orange-400", highlight: "一年一約，低保費做大保額", ageLimit: "投保年齡: 0-70歲 | 續保年齡: 保證續保至80歲", features: ["條款同TED，涵蓋 41 項特定傷病。","靈活附加於主約，年輕時用極低保費創造百萬重疾防護網。"] },
+                { code: "TED35", title: "精彩雙保精選傷病定期", minUnit: "50萬", recommend: "50萬~100萬", color: "border-amber-400", highlight: "涵蓋35項特定疾病", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 依定期約定", features: ["涵蓋輕度與重度35項特定疾病。","依病況程度給付不同比例 (例:輕度10%/重度100%)。"] },
+                { code: "HC/TED", title: "癌症+精選傷病雙重組合", minUnit: "專案", recommend: "100萬以上", color: "border-red-400", highlight: "雙劍合璧，滴水不漏", ageLimit: "組合型專案", features: ["結合防癌險的療程給付與重大傷病的一次金，建構最完整的重症防禦工事。"] },
+                { type: "section", title: "重大疾病/特傷 (傳統核心)", subtitle: "聚焦核心重症，理賠條件依保單條款約定" },
+                { code: "HDD", title: "活力洋溢3重大疾病", minUnit: "10萬", recommend: "50萬~100萬", color: "border-amber-500", highlight: "純保障型重疾一次金", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["針對傳統七項核心重疾(如心肌梗塞、腦中風、癌症等)確診給付一次金。","無身故退還保費機制，將保費全數轉化為重疾保障。"] },
+                { code: "DMA", title: "幸福憶百健康終身保險", minUnit: "10萬", recommend: "30萬", color: "border-orange-400", highlight: "針對重疾與失智終身防護", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障終身", features: ["針對重疾與特定失智狀況提供終身一次金健康防護。"] },
+                { code: "10TSDD", title: "活力洋溢特傷定期保險", minUnit: "10萬", recommend: "100萬", color: "border-orange-500", highlight: "特定重大傷病一次金", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 定期險", features: ["確診給付特定重大傷病一次金。"] },
+                { code: "10TDD", title: "樂健康祥定期健康保險", minUnit: "10萬", recommend: "100萬", color: "border-orange-400", highlight: "低保費高保障", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 定期險", features: ["低保費高保障，確診重疾一次金給付。"] },
+                { code: "ZDDR2", title: "至尊康翔重大疾病附約", minUnit: "10萬", recommend: "50萬", color: "border-amber-400", highlight: "附加型重疾防護", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 最高續保至75歲", features: ["附加於主約之下，強化七大重症保障，確診一次金給付。"] },
+                { code: "SDLR2", title: "樂享健康2健康保險附約", minUnit: "10萬", recommend: "50萬~100萬", color: "border-orange-300", highlight: "心腦血管疾病專屬防護", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保證續保至75歲", features: ["聚焦心腦血管及慢性病變。","減輕心肌梗塞、中風等高發疾病的療養負擔。"] },
+                { type: "section", title: "早期停售商品 (重疾/特傷)", subtitle: "保留供舊保單健診比對參考" },
+                { code: "30DD-D", title: "重大疾病終身主約", minUnit: "10萬", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期七大重疾", ageLimit: "投保年齡: 早期商品 | 續保年齡: 保障終身", features: ["針對傳統七項核心重疾確診給付一次金。"] },
+                { code: "NDLR", title: "特定傷病終身主約", minUnit: "10萬", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期特定傷病", ageLimit: "投保年齡: 早期商品 | 續保年齡: 保障終身", features: ["早期常見之特定傷病終身險，給予一次金理賠。"] },
+                { type: "custom", html: `
+                    <div class="bg-white p-6 rounded-2xl border-2 border-orange-200 shadow-md mt-4">
+                        <h3 class="text-xl font-black text-orange-800 mb-4 border-b-2 border-orange-100 pb-3 flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="w-6 h-6"></i> 現行 TED / 1TED 涵蓋之 41 項精選傷病 (依健保公告為準)
+                        </h3>
+                        <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-2.5 text-sm font-semibold text-gray-700">
+                            ${[
+                                "腦中風後障礙(重度)", "急性心肌梗塞(重度)", "冠狀動脈繞道手術", "末期腎病變(洗腎)", "癌症(重度)", "癱瘓(重度)", "重大器官/造血幹細胞移植",
+                                "嚴重阿茲海默氏症", "嚴重巴金森氏症", "嚴重類風濕性關節炎", "嚴重全身性紅斑性狼瘡腎病變", "嚴重克隆氏症或潰瘍性結腸炎", "嚴重再生不良性貧血", "多發性硬化症",
+                                "嚴重肌肉失養症", "嚴重肌萎縮性脊髓側索硬化症(漸凍人)", "嚴重運動神經元疾病", "重度重症肌無力", "脊髓灰質炎併發重度神經障礙", "嚴重頭部創傷", "深度昏迷",
+                                "嚴重第三度燒燙傷", "主動脈外科置換手術", "心臟瓣膜開心手術", "慢性肝病合併肝衰竭", "急性腦炎併發專屬神經障礙", "嚴重細菌性腦膜炎", "嚴重原發性肺動脈高血壓",
+                                "嚴重慢性阻塞性肺病", "嚴重肝硬化症", "急性壞死性胰臟炎", "克雅二氏病", "伊波拉病毒感染", "進行性核上神經失調症", "多系統萎縮症",
+                                "嚴重氣喘", "嚴重慢性縮窄性心包炎", "嚴重原發性硬化性膽管炎", "嚴重膽道閉鎖", "嚴重瀰漫性硬皮病", "嚴重特發性肺纖維化"
+                            ].map((disease, i) => `<li class="flex items-start gap-1.5"><span class="text-orange-500 font-black mt-0.5">${i + 1}.</span> ${disease}</li>`).join('')}
+                        </ul>
+                        <p class="text-xs font-bold text-red-500 mt-5 text-right bg-red-50 p-2 rounded inline-block float-right">* 此表為現行項目簡述，理賠之詳細疾病定義與比例，悉以保單條款為準。</p>
+                        <div class="clear-both"></div>
+                    </div>
+                `}
+            ],
+            ltc: [
+                { type: "section", title: "主約 (Main Contract)", subtitle: "建構老後尊嚴，提供源源不絕的照護現金流" },
+                { code: "1LTC", title: "照亮幸福長期照顧保險", minUnit: "1萬", recommend: "3萬/月", color: "border-emerald-500", highlight: "長照/壽險雙效合一", ageLimit: "投保年齡: 15-65歲 | 續保年齡: 保證續保至75歲", features: ["<strong class='text-emerald-800'>一筆保命金：</strong>符合長照或完全失能，先給付一筆高額理賠金。","<strong class='text-emerald-800'>月月照護薪：</strong>分期給付最高達16次，解決長期聘請看護缺口。","若未啟動長照，則轉換為身故壽險理賠，保費不白繳。"] },
+                { code: "HRLTC2", title: "溢路相守2長期照顧", minUnit: "1萬", recommend: "3萬", color: "border-green-400", highlight: "繳費有期限，保障至99歲", ageLimit: "投保年齡: 0-65歲 | 續保年齡: 保障至99歲", features: ["繳費20年即可享有至99歲的長照防護。","同樣具備「長照一次金 + 分期長照金」的雙重機制。"] },
+                { code: "FLTC", title: "輕鬆陪伴長照健康保險", minUnit: "1萬", recommend: "2~3萬", color: "border-teal-400", highlight: "長年期平準費率", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障至85歲", features: ["繳費並保障至85歲，費率平穩不隨年齡飆升。","分期長照金最高給付可達 192 個月 (16年)，長期抗戰無虞。"] },
+                { code: "HLTC/HTLTC", title: "溢路陪伴長期照顧", minUnit: "1萬", recommend: "2~3萬", color: "border-green-300", highlight: "保障至80歲", ageLimit: "投保年齡: 0-60歲 | 續保年齡: 保障至80歲", features: ["提供至80歲的長照防護。","長照一次金 + 分期長照金。"] },
+                { code: "KRLTC", title: "陪童相守保險", minUnit: "1萬", recommend: "2萬", color: "border-emerald-300", highlight: "孩童專屬失能長照防護", ageLimit: "投保年齡: 0-15歲 | 續保年齡: 保障至85歲", features: ["針對孩童特定的長照與嚴重失能風險設計。","確保萬一發生憾事，父母有足夠的經濟後盾陪伴孩子復健復原。"] },
+                { code: "10TLTC", title: "青年護照長期定期健康", minUnit: "1萬", recommend: "3萬", color: "border-green-300", highlight: "青年打拼期的護城河", ageLimit: "投保年齡: 15-40歲 | 續保年齡: 保證續保至75歲", features: ["專為剛出社會、預算有限的青年族群設計。","用定期險的低保費，建構百萬級別的長照/失能防護網。"] },
+                { type: "section", title: "早期停售商品 (長照)", subtitle: "保留供舊保單健診比對參考" },
+                { code: "30RLTC", title: "終身長照險", minUnit: "5000", recommend: "停售", color: "border-gray-300", discontinued: true, highlight: "早期終身長照", ageLimit: "投保年齡: 早期商品 | 續保年齡: 保障終身", features: ["繳費30年保障終身，符合失能失智條件即理賠。"] }
+            ]
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        const productTabs = [
+            { id: 'life', label: '壽險規劃', icon: 'shield', color: 'text-indigo-600', borderColor: 'border-indigo-600' },
+            { id: 'accident', label: '意外防護', icon: 'activity', color: 'text-amber-600', borderColor: 'border-amber-600' },
+            { id: 'medical', label: '醫療/手術', icon: 'stethoscope', color: 'text-sky-600', borderColor: 'border-sky-600' },
+            { id: 'cancer', label: '防癌/尖端', icon: 'heart-pulse', color: 'text-rose-600', borderColor: 'border-rose-600' },
+            { id: 'critical', label: '重疾/傷病', icon: 'shield-alert', color: 'text-orange-600', borderColor: 'border-orange-600' },
+            { id: 'ltc', label: '長照/失能', icon: 'user-round', color: 'text-emerald-600', borderColor: 'border-emerald-600' }
+        ];
+
+        // ==========================================
+        // 系統狀態與邏輯
+        // ==========================================
+        let currentSlide = 0;
+        let activeTab = 'life';
+
+        // 初始化
+        function init() {
+            renderPagination();
+            renderSlide();
+            
+            // 鍵盤導覽
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') nextSlide();
+                if (e.key === 'ArrowLeft') prevSlide();
+            });
+        }
+
+        function nextSlide() {
+            if (currentSlide < slidesHTML.length - 1) {
+                currentSlide++;
+                renderSlide();
+                renderPagination();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                renderSlide();
+                renderPagination();
+            }
+        }
+
+        function renderPagination() {
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = slidesHTML.map((_, idx) => `
+                <div onclick="goToSlide(${idx})" class="h-2.5 rounded-full cursor-pointer transition-all duration-300 ${currentSlide === idx ? 'w-10 bg-[#8c7a6b] shadow-md' : 'w-3 bg-gray-300 hover:bg-gray-400'}"></div>
+            `).join('');
+
+            document.getElementById('btn-prev').disabled = currentSlide === 0;
+            document.getElementById('btn-next').disabled = currentSlide === slidesHTML.length - 1;
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            renderSlide();
+            renderPagination();
+        }
+
+        function renderSlide() {
+            const container = document.getElementById('slider-container');
+            container.innerHTML = slidesHTML[currentSlide];
+            
+            // 若為第4頁 (商品頁)，需初始化商品Tab
+            if (currentSlide === 3) {
+                renderProductTabs();
+                renderProductContent(activeTab);
+            }
+            
+            // 重新載入 Lucide Icons
+            lucide.createIcons();
+        }
+
+        // --- 商品頁渲染邏輯 ---
+        function renderProductTabs() {
+            const tabsContainer = document.getElementById('product-tabs-container');
+            if(!tabsContainer) return;
+            
+            tabsContainer.innerHTML = productTabs.map(tab => {
+                const isActive = activeTab === tab.id;
+                const activeClasses = isActive ? `bg-gray-50 border-${tab.borderColor.split('-')[1]}-600 text-gray-900` : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-700';
+                const iconColor = isActive ? tab.color : 'text-gray-400';
+                
+                // 行內樣式強制指定底線顏色以覆蓋 Tailwind 未編譯問題
+                const style = isActive ? `style="border-bottom-color: currentColor;"` : '';
+
+                return `
+                <button onclick="switchTab('${tab.id}')" class="flex items-center gap-2 px-5 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap border-b-4 ${activeClasses}" ${style}>
+                    <i data-lucide="${tab.icon}" class="w-5 h-5 ${iconColor}"></i>
+                    <span class="${isActive ? tab.color : ''}">${tab.label}</span>
+                </button>
+                `;
+            }).join('');
+        }
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            renderProductTabs();
+            renderProductContent(tabId);
+            lucide.createIcons();
+        }
+
+        function renderProductContent(tabId) {
+            const contentContainer = document.getElementById('product-content-container');
+            if(!contentContainer) return;
+
+            const products = productsData[tabId] || [];
+            let html = '<div class="flex flex-col gap-5">';
+
+            products.forEach(item => {
+                if (item.type === 'section') {
+                    html += `
+                    <div class="w-full mb-2 mt-6 first:mt-0">
+                        <h3 class="text-2xl font-black text-[#4a4036] flex items-center gap-2 mb-1">
+                            <i data-lucide="shield-alert" class="w-6 h-6 text-[#8c7a6b]"></i> ${item.title}
+                        </h3>
+                        ${item.subtitle ? `<p class="text-sm font-bold text-[#8c7a6b] ml-8">${item.subtitle}</p>` : ''}
+                        <div class="h-1 w-full bg-gradient-to-r from-[#8c7a6b] to-transparent mt-2 rounded-full opacity-50"></div>
+                    </div>`;
+                } else if (item.type === 'custom') {
+                    html += item.html;
+                } else {
+                    const featuresHtml = item.features.map(f => {
+                        // 如果字串包含 div 則直接印出(通常為特別備註)，否則加上打勾icon
+                        if(f.trim().startsWith('<div')) return f;
+                        return `<p><i data-lucide="check" class="w-4 h-4 inline text-green-500 mr-1"></i>${f}</p>`;
+                    }).join('');
+
+                    html += `
+                    <div class="w-full bg-white rounded-xl shadow-sm border-l-4 ${item.color} border-y border-r border-gray-200 flex flex-col lg:flex-row relative overflow-hidden group hover:shadow-md transition-shadow">
+                        ${item.discontinued ? `<div class="absolute top-0 right-0 bg-gray-500 text-white text-[10px] font-bold px-4 py-1 rounded-bl-lg shadow-sm tracking-widest z-10 pointer-events-none">已停售</div>` : ''}
+                        
+                        <!-- 左側：商品基本資訊 -->
+                        <div class="w-full lg:w-1/3 bg-gray-50/50 p-5 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col justify-center">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <h4 class="font-black text-2xl tracking-tight ${item.discontinued ? 'text-gray-400 line-through' : 'text-gray-900'}">${item.code}</h4>
+                                ${item.interest ? `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 text-[10px] font-bold rounded-full border border-blue-200 flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> 利變型</span>` : ''}
+                            </div>
+                            <span class="text-base font-bold mb-3 ${item.discontinued ? 'text-gray-400' : 'text-[#5a4f43]'}">${item.title}</span>
+                            <div class="flex flex-wrap gap-2 mt-auto">
+                                ${item.minUnit ? `<span class="px-2.5 py-1 text-xs font-black rounded text-white ${item.discontinued ? 'bg-gray-400' : 'bg-orange-600'}">最低 ${item.minUnit}</span>` : ''}
+                                ${item.recommend ? `<span class="px-2.5 py-1 text-xs font-black rounded border ${item.discontinued ? 'border-gray-300 text-gray-400' : 'border-red-200 text-red-600 bg-red-50'}">建議 ${item.recommend}</span>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- 右側：商品特點與內容 -->
+                        <div class="w-full lg:w-2/3 p-5 flex flex-col">
+                            ${item.highlight && !item.discontinued ? `
+                            <div class="bg-orange-50/80 rounded-md p-2.5 mb-3 border border-orange-100 text-sm font-bold text-orange-900 flex items-start gap-2">
+                                <i data-lucide="target" class="w-4 h-4 text-orange-600 shrink-0 mt-0.5"></i>
+                                <span>${item.highlight}</span>
+                            </div>` : ''}
+                            
+                            <div class="text-sm space-y-2 leading-relaxed font-medium flex-grow ${item.discontinued ? 'text-gray-400' : 'text-gray-700'}">
+                                ${featuresHtml}
+                            </div>
+
+                            ${item.ageLimit ? `
+                            <div class="mt-4 pt-3 border-t border-gray-100 text-xs font-semibold text-right ${item.discontinued ? 'text-gray-400' : 'text-gray-500'} tracking-wide">
+                                ${item.ageLimit}
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    `;
+                }
+            });
+
+            html += '</div>';
+            contentContainer.innerHTML = html;
+        }
+
+        // 啟動系統
+        init();
     </script>
 </body>
 </html>
+
+
+```
+
+
